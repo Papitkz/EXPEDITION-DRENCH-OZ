@@ -492,4 +492,23 @@ onMounted(() => {
     font-size: 0.65rem;
   }
 }
+@media (max-width: 640px) {
+  .nature-icons {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 2rem 1rem;
+  }
+
+  .nature-icon-item {
+    grid-column: span 2;
+    justify-self: center;
+  }
+
+  .nature-icon-item:nth-child(4) {
+    grid-column: 2 / span 2;
+  }
+
+  .nature-icon-item:nth-child(5) {
+    grid-column: 4 / span 2;
+  }
+}
 </style>
