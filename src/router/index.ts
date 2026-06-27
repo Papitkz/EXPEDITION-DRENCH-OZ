@@ -29,6 +29,7 @@ export const routes: RouteRecordRaw[] = [
     children: [
       { path: 'dashboard', name: 'admin-dashboard', component: () => import('@/views/admin/AdminDashboard.vue') },
       { path: 'images', name: 'admin-images', component: () => import('@/views/admin/AdminImages.vue') },
+      { path: 'content', name: 'admin-content', component: () => import('@/views/admin/AdminContent.vue') },
       { path: 'sections', name: 'admin-sections', component: () => import('@/views/admin/AdminSections.vue') },
       { path: 'trips', name: 'admin-trips', component: () => import('@/views/admin/AdminTrips.vue') },
       { path: 'limited-expeditions', name: 'admin-limited-expeditions', component: () => import('@/views/admin/AdminLimitedExpeditions.vue') },

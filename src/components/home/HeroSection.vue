@@ -17,37 +17,105 @@ const videos = computed(() =>
   }))
 )
 
-// Limited Expeditions banner image (surfer girl, secluded Ningaloo wave) — slot 0 of SpecialtyExpeditionsSection
 const limitedBannerImage = computed(() => specialtyCms.getSlot('specialtyCards', 1)?.imageUrl || '')
 
-// Advanced video carousel state
+const showTours = ref(true)
+const heroRef = ref<HTMLElement | null>(null)
+const isHeroVisible = ref(true)
+
+const isCalendlyLoaded = ref(false)
+const isCalendlyOpen = ref(false)
+const isPulsing = ref(true)
+
+const stopPulse = () => {
+  isPulsing.value = false
+}
+
+const loadCalendly = () => {
+  if (document.getElementById('calendly-script')) {
+    isCalendlyLoaded.value = true
+    return
+  }
+
+  const link = document.createElement('link')
+  link.rel = 'stylesheet'
+  link.href = 'https://assets.calendly.com/assets/external/widget.css'
+  document.head.appendChild(link)
+
+  const script = document.createElement('script')
+  script.id = 'calendly-script'
+  script.src = 'https://assets.calendly.com/assets/external/widget.js'
+  script.async = true
+  script.onload = () => {
+    isCalendlyLoaded.value = true
+  }
+  document.head.appendChild(script)
+}
+
+const launchPopup = () => {
+  ;(window as any).Calendly?.initPopupWidget({
+    url: 'https://calendly.com/expeditiondrenched/talk-to-an-adventure-partner',
+  })
+}
+
+const openCalendly = () => {
+  stopPulse()
+  isCalendlyOpen.value = true
+  if (!isCalendlyLoaded.value) {
+    loadCalendly()
+    const interval = window.setInterval(() => {
+      if ((window as any).Calendly) {
+        clearInterval(interval)
+        launchPopup()
+      }
+    }, 100)
+  } else {
+    launchPopup()
+  }
+}
+
+const handleCalendlyClose = (e: MessageEvent) => {
+  if (e.data?.event === 'calendly.event_type_viewed' || e.data?.event === 'calendly.popup_closed') {
+    isCalendlyOpen.value = false
+  }
+}
+
 const currentVideoIndex = ref(0)
 const isTransitioning = ref(false)
 const videoLoaded = ref(false)
 const isPlaying = ref(true)
-const showControls = ref(false)
-const isHovering = ref(false)
 const isMobile = ref(false)
 const touchStartX = ref(0)
 const touchEndX = ref(0)
 const videoError = ref(false)
 const isBuffering = ref(false)
 const videoRef = ref<HTMLVideoElement | null>(null)
-const showCenterPlay = ref(false)
-const showPlayButton = ref(false)
+const showControls = ref(false)
+const controlsTimeout = ref<number | null>(null)
 
 let resizeObserver: ResizeObserver | null = null
+let nextSectionObserver: IntersectionObserver | null = null
 let playAttemptInterval: number | null = null
 let transitionTimeout: number | null = null
-let hoverHideTimeout: number | null = null
 
 onMounted(async () => {
   await cms.load()
   await specialtyCms.load()
   checkMobile()
 
-  resizeObserver = new ResizeObserver(() => { checkMobile() })
+  resizeObserver = new ResizeObserver(() => checkMobile())
   resizeObserver.observe(document.body)
+
+  const nextSection = heroRef.value?.nextElementSibling as HTMLElement | null
+  if (nextSection) {
+    nextSectionObserver = new IntersectionObserver(
+      ([entry]) => {
+        isHeroVisible.value = !entry.isIntersecting
+      },
+      { threshold: 0 }
+    )
+    nextSectionObserver.observe(nextSection)
+  }
 
   if (videoRef.value && videos.value[0]?.hasVideo) {
     videoRef.value.src = videos.value[0].videoUrl
@@ -60,9 +128,6 @@ onMounted(async () => {
     }
   }
 
-  showControls.value = true
-  setTimeout(() => { if (!isHovering.value) showControls.value = false }, 4000)
-
   document.addEventListener('visibilitychange', handleVisibilityChange)
 
   playAttemptInterval = window.setInterval(() => {
@@ -70,17 +135,27 @@ onMounted(async () => {
       forcePlay()
     }
   }, 3000)
+
+  loadCalendly()
+  window.addEventListener('message', handleCalendlyClose)
+  window.setTimeout(() => {
+    isPulsing.value = false
+  }, 6000)
 })
 
 onUnmounted(() => {
   if (transitionTimeout) clearTimeout(transitionTimeout)
-  if (hoverHideTimeout) clearTimeout(hoverHideTimeout)
+  if (controlsTimeout.value) clearTimeout(controlsTimeout.value)
   if (resizeObserver) resizeObserver.disconnect()
+  if (nextSectionObserver) nextSectionObserver.disconnect()
   if (playAttemptInterval) clearInterval(playAttemptInterval)
+  window.removeEventListener('message', handleCalendlyClose)
   document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 
-const checkMobile = () => { isMobile.value = window.innerWidth < 768 }
+const checkMobile = () => {
+  isMobile.value = window.innerWidth < 768
+}
 
 const currentVideoUrl = computed(() => videos.value[currentVideoIndex.value]?.videoUrl || '')
 const nextVideoIndex = computed(() => (currentVideoIndex.value + 1) % videos.value.length)
@@ -102,10 +177,8 @@ const forcePlay = async () => {
     isPlaying.value = true
     videoError.value = false
     isBuffering.value = false
-    showCenterPlay.value = false
-  } catch (err) {
+  } catch {
     isPlaying.value = false
-    if (isMobile.value) showCenterPlay.value = true
   }
 }
 
@@ -126,20 +199,22 @@ const switchVideo = (newIndex: number) => {
 
       if (isMobile.value && !isPlaying.value) {
         videoRef.value!.pause()
-        showCenterPlay.value = false
-        isTransitioning.value = false
-        isBuffering.value = false
       } else {
         forcePlay()
-        isTransitioning.value = false
-        isBuffering.value = false
       }
 
-      if (videos.value[nextVideoIndex.value]?.hasVideo) preloadVideo(videos.value[nextVideoIndex.value].videoUrl)
+      isTransitioning.value = false
+      isBuffering.value = false
+
+      if (videos.value[nextVideoIndex.value]?.hasVideo) {
+        preloadVideo(videos.value[nextVideoIndex.value].videoUrl)
+      }
     }
 
     videoRef.value!.addEventListener('canplaythrough', onCanPlay)
-    setTimeout(() => { if (isTransitioning.value) onCanPlay() }, 3000)
+    window.setTimeout(() => {
+      if (isTransitioning.value) onCanPlay()
+    }, 3000)
   }, 300)
 }
 
@@ -151,11 +226,18 @@ const togglePlayPause = () => {
     forcePlay()
   } else {
     videoRef.value?.pause()
-    if (isMobile.value) showCenterPlay.value = true
   }
 }
 
-const handleCenterPlayClick = () => { togglePlayPause() }
+const handleVideoClick = () => {
+  togglePlayPause()
+  showControls.value = true
+  if (controlsTimeout.value) clearTimeout(controlsTimeout.value)
+  controlsTimeout.value = window.setTimeout(() => {
+    showControls.value = false
+  }, 2000)
+}
+
 const handleVideoEnded = () => {
   if (hasMultipleVideos.value) {
     nextVideo()
@@ -165,45 +247,36 @@ const handleVideoEnded = () => {
   }
 }
 
-const onTouchStart = (e: TouchEvent) => { touchStartX.value = e.changedTouches[0].screenX }
+const onTouchStart = (e: TouchEvent) => {
+  touchStartX.value = e.changedTouches[0].screenX
+}
+
 const onTouchEnd = (e: TouchEvent) => {
   touchEndX.value = e.changedTouches[0].screenX
   const diff = touchStartX.value - touchEndX.value
-  if (Math.abs(diff) > 50) {
-    if (diff > 0) nextVideo()
-  }
+  if (Math.abs(diff) > 50 && diff > 0) nextVideo()
 }
 
-const onMouseEnter = () => {
-  isHovering.value = true
-  showControls.value = true
-  if (hoverHideTimeout) clearTimeout(hoverHideTimeout)
-  if (!isMobile.value) showPlayButton.value = true
+const onVideoLoaded = () => {
+  videoLoaded.value = true
+  if (videoRef.value) videoRef.value.style.opacity = '1'
 }
 
-const onMouseLeave = () => {
-  isHovering.value = false
-  setTimeout(() => { if (!isHovering.value) showControls.value = false }, 2000)
-  if (!isMobile.value) showPlayButton.value = false
+const onVideoError = () => {
+  videoError.value = true
+  window.setTimeout(() => {
+    if (videoError.value && hasMultipleVideos.value) nextVideo()
+  }, 2000)
 }
 
-const onHeroClick = () => { if (isMobile.value) showPlayButton.value = !showPlayButton.value }
-const onVideoLoaded = () => { videoLoaded.value = true; if (videoRef.value) videoRef.value.style.opacity = '1' }
-const onVideoPause = () => { if (isMobile.value) showCenterPlay.value = true }
-const onVideoError = () => { videoError.value = true; setTimeout(() => { if (videoError.value && hasMultipleVideos.value) nextVideo() }, 2000) }
-const handleVisibilityChange = () => { if (!document.hidden && isPlaying.value && !isMobile.value) forcePlay() }
+const handleVisibilityChange = () => {
+  if (!document.hidden && isPlaying.value && !isMobile.value) forcePlay()
+}
 </script>
 
 <template>
-  <section
-    class="hero-section"
-    @mouseenter="onMouseEnter"
-    @mouseleave="onMouseLeave"
-    @touchstart="onTouchStart"
-    @touchend="onTouchEnd"
-    @click="onHeroClick"
-  >
-    <div class="hero-bg">
+  <section class="hero-section" ref="heroRef">
+    <div class="hero-bg" @click="handleVideoClick" @touchstart="onTouchStart" @touchend="onTouchEnd">
       <div class="video-container">
         <video
           v-if="videos[0]?.hasVideo"
@@ -213,13 +286,12 @@ const handleVisibilityChange = () => { if (!document.hidden && isPlaying.value &
           playsinline
           preload="auto"
           class="video-hero"
-          :class="{ 'video-fade-in': videoLoaded, 'is-buffering': isBuffering }"
+          :class="{ 'is-buffering': isBuffering }"
           @loadeddata="onVideoLoaded"
           @ended="handleVideoEnded"
           @error="onVideoError"
           @waiting="isBuffering = true"
-          @playing="isBuffering = false; showCenterPlay = false"
-          @pause="onVideoPause"
+          @playing="isBuffering = false"
         >
           <source :src="currentVideoUrl" type="video/mp4">
         </video>
@@ -230,22 +302,17 @@ const handleVisibilityChange = () => { if (!document.hidden && isPlaying.value &
           <div class="buffering-spinner"></div>
         </div>
       </div>
+
       <div class="overlay-dark"></div>
       <div class="overlay-gradient"></div>
-    </div>
 
-    <button
-      v-if="videos[0]?.hasVideo && !isBuffering"
-      @click.stop="handleCenterPlayClick"
-      class="center-play-button"
-      :class="{ 'is-visible': showPlayButton }"
-      :aria-label="isPlaying ? 'Pause video' : 'Play video'"
-    >
-      <div class="play-circle">
-        <svg v-if="!isPlaying" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-        <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+      <div class="video-click-overlay" :class="{ 'show-controls': showControls }">
+        <button class="video-control-btn" :aria-label="isPlaying ? 'Pause' : 'Play'">
+          <svg v-if="!isPlaying" width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          <svg v-else width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        </button>
       </div>
-    </button>
+    </div>
 
     <div class="hero-content">
       <div class="headline-block">
@@ -271,42 +338,104 @@ const handleVisibilityChange = () => { if (!document.hidden && isPlaying.value &
         </p>
       </div>
 
-      <ToursSection />
+      <Transition name="tours-slide">
+        <div v-if="showTours" class="tours-wrapper">
+          <ToursSection />
+        </div>
+      </Transition>
 
-      <div class="limited-banner">
-        <div class="banner-text">
-          <div class="banner-rule">
-            <span class="rule-line"></span>
-            <svg class="banner-compass" width="20" height="20" viewBox="0 0 200 200">
-              <circle cx="100" cy="100" r="78" fill="none" stroke="#C9A84C" stroke-width="1.5" opacity="0.85"/>
-              <polygon points="100,28 108,100 100,113 92,100" fill="#C9A84C"/>
-              <polygon points="100,172 108,100 100,87 92,100" fill="#C9A84C"/>
-              <polygon points="28,100 100,92 113,100 100,108" fill="#C9A84C"/>
-              <polygon points="172,100 100,92 87,100 100,108" fill="#C9A84C"/>
-              <circle cx="100" cy="100" r="9" fill="#C9A84C"/>
-            </svg>
-            <span class="rule-line"></span>
+      <Transition name="tours-slide">
+        <div v-if="showTours" class="limited-banner">
+          <div class="banner-text">
+            <div class="banner-rule">
+              <span class="rule-line"></span>
+              <svg class="banner-compass" width="20" height="20" viewBox="0 0 200 200">
+                <circle cx="100" cy="100" r="78" fill="none" stroke="#C9A84C" stroke-width="1.5" opacity="0.85"/>
+                <polygon points="100,28 108,100 100,113 92,100" fill="#C9A84C"/>
+                <polygon points="100,172 108,100 100,87 92,100" fill="#C9A84C"/>
+                <polygon points="28,100 100,92 113,100 100,108" fill="#C9A84C"/>
+                <polygon points="172,100 100,92 87,100 100,108" fill="#C9A84C"/>
+                <circle cx="100" cy="100" r="9" fill="#C9A84C"/>
+              </svg>
+              <span class="rule-line"></span>
+            </div>
+
+            <h3 class="banner-heading">LOOKING FOR SOMETHING DIFFERENT?</h3>
+            <p class="banner-sub">Selected dates are reserved for limited, hosted and specialty expeditions throughout the season.</p>
+
+            <button class="btn-banner" @click.stop="router.push('/limited-expeditions')">
+              VIEW LIMITED EXPEDITIONS
+            </button>
           </div>
 
-          <h3 class="banner-heading">LOOKING FOR SOMETHING DIFFERENT?</h3>
-          <p class="banner-sub">Selected dates are reserved for limited, hosted and specialty expeditions throughout the season.</p>
-
-          <button class="btn-banner" @click.stop="router.push('/limited-expeditions')">
-            VIEW LIMITED EXPEDITIONS
-          </button>
+          <div class="banner-img-panel">
+            <img
+              v-if="limitedBannerImage"
+              :src="limitedBannerImage"
+              alt="Surfer riding a secluded wave at Ningaloo Reef"
+              class="banner-img"
+            />
+            <NoImagePlaceholder v-else dark class="absolute inset-0" />
+          </div>
         </div>
-
-        <div class="banner-img-panel">
-          <img
-            v-if="limitedBannerImage"
-            :src="limitedBannerImage"
-            alt="Surfer riding a secluded wave at Ningaloo Reef"
-            class="banner-img"
-          />
-          <NoImagePlaceholder v-else dark class="absolute inset-0" />
-        </div>
-      </div>
+      </Transition>
     </div>
+
+    <Transition name="bar-fade">
+      <div v-show="isHeroVisible" class="bottom-right-bar">
+        <button
+          @click.stop="showTours = !showTours"
+          class="bar-btn bar-btn-text"
+          :aria-label="showTours ? 'Hide tours' : 'Show tours'"
+        >
+          <span class="bar-icon">
+            <svg v-if="showTours" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M18 15l-6-6-6 6"/>
+            </svg>
+            <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </span>
+          <span class="bar-label">{{ showTours ? 'HIDE TOURS' : 'SHOW TOURS' }}</span>
+        </button>
+
+        <span class="bar-divider"></span>
+
+        <button
+          @click.stop="togglePlayPause"
+          class="bar-btn"
+          :aria-label="isPlaying ? 'Pause' : 'Play'"
+        >
+          <svg v-if="!isPlaying" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        </button>
+
+        <button
+          @click.stop="nextVideo"
+          v-if="hasMultipleVideos"
+          class="bar-btn"
+          aria-label="Next video"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4v16l14-8z"/></svg>
+        </button>
+
+        <Transition name="bac-fade">
+          <button
+            @click.stop="openCalendly"
+            class="bar-btn bar-btn-gold"
+            :class="{ 'bac-pulse': isPulsing }"
+            aria-label="Book a call with an adventure partner"
+          >
+            <span class="bar-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6.29 6.29l.93-.93a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+            </span>
+            <span class="bar-label">Book a Call</span>
+          </button>
+        </Transition>
+      </div>
+    </Transition>
   </section>
 </template>
 
@@ -323,12 +452,19 @@ const handleVisibilityChange = () => { if (!document.hidden && isPlaying.value &
   position: absolute;
   inset: 0;
   z-index: 0;
+  cursor: pointer;
+  transform: none !important;
+  animation: none !important;
+  scale: 1 !important;
 }
 
 .video-container {
   position: relative;
   width: 100%;
   height: 100%;
+  transform: none !important;
+  animation: none !important;
+  scale: 1 !important;
 }
 
 .video-hero {
@@ -337,25 +473,22 @@ const handleVisibilityChange = () => { if (!document.hidden && isPlaying.value &
   object-fit: cover;
   display: block;
   transition: opacity 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  will-change: opacity, transform;
-}
-
-.video-fade-in {
+  will-change: auto;
+  transform: none !important;
+  animation: none !important;
+  scale: 1 !important;
   opacity: 1;
-  animation: slowZoom 20s ease-out forwards;
 }
 
-.video-hero.is-buffering { opacity: 0.5; }
-
-@keyframes slowZoom {
-  0%   { transform: scale(1) translate3d(0,0,0); }
-  100% { transform: scale(1.10) translate3d(0, -3%, 0); }
+.video-hero.is-buffering {
+  opacity: 0.5;
 }
 
 .overlay-dark {
   position: absolute;
   inset: 0;
   background: rgba(7, 26, 43, 0.55);
+  pointer-events: none;
 }
 
 .overlay-gradient {
@@ -368,42 +501,47 @@ const handleVisibilityChange = () => { if (!document.hidden && isPlaying.value &
     rgba(7,26,43,0.55) 70%,
     rgba(7,26,43,0.85) 100%
   );
-}
-
-.center-play-button {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 25;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  opacity: 0;
   pointer-events: none;
-  transition: opacity 0.4s ease;
+  transform: none !important;
+  animation: none !important;
 }
 
-.center-play-button.is-visible { opacity: 1; pointer-events: auto; }
-
-.play-circle {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.15);
-  backdrop-filter: blur(8px);
-  border: 2px solid rgba(255,255,255,0.7);
+.video-click-overlay {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  transition: all 0.3s ease;
+  z-index: 25;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
-.center-play-button:hover .play-circle {
-  background: rgba(255,255,255,0.25);
-  transform: scale(1.08);
+.video-click-overlay.show-controls {
+  opacity: 1;
+}
+
+.video-control-btn {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(12px);
+  border: 2px solid rgba(255,255,255,0.6);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  animation: controlPop 0.3s ease;
+}
+
+@keyframes controlPop {
+  0% { transform: scale(0.8); opacity: 0; }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 .buffering-indicator {
@@ -425,7 +563,153 @@ const handleVisibilityChange = () => { if (!document.hidden && isPlaying.value &
   animation: spin 1s linear infinite;
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.tours-slide-enter-active,
+.tours-slide-leave-active {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: 2000px;
+  opacity: 1;
+  overflow: hidden;
+}
+
+.tours-slide-enter-from,
+.tours-slide-leave-to {
+  max-height: 0;
+  opacity: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.bottom-right-bar {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.4rem 0.6rem;
+  background: rgba(7, 26, 43, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(201, 168, 76, 0.35);
+  border-radius: 100px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.bar-fade-enter-active,
+.bar-fade-leave-active {
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.bar-fade-enter-from,
+.bar-fade-leave-to {
+  opacity: 0;
+  transform: translateY(8px) scale(0.95);
+}
+
+.bar-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: #C9A84C;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+}
+
+.bar-btn:hover {
+  background: rgba(201, 168, 76, 0.15);
+  transform: scale(1.1);
+}
+
+.bar-btn-text {
+  width: auto;
+  padding: 0 0.8rem 0 0.5rem;
+  border-radius: 100px;
+  gap: 0.4rem;
+  display: flex;
+  align-items: center;
+}
+
+.bar-icon {
+  display: flex;
+  align-items: center;
+  color: #C9A84C;
+}
+
+.bar-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: rgba(248, 245, 239, 0.85);
+  white-space: nowrap;
+}
+
+.bar-divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(201, 168, 76, 0.25);
+  margin: 0 0.2rem;
+}
+
+.bar-btn-gold {
+  width: auto;
+  padding: 0 1rem 0 0.7rem;
+  border-radius: 100px;
+  gap: 0.4rem;
+  background: #c9a84c;
+  color: #071a2b;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 12px rgba(201, 168, 76, 0.4);
+}
+
+.bar-btn-gold:hover {
+  background: #e8c05a;
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 4px 20px rgba(201, 168, 76, 0.55);
+}
+
+.bar-btn-gold .bar-icon {
+  color: #071a2b;
+}
+
+.bar-btn-gold .bar-label {
+  color: #071a2b;
+  font-weight: 700;
+}
+
+@keyframes bac-pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0.55), 0 2px 12px rgba(201, 168, 76, 0.4); }
+  70%  { box-shadow: 0 0 0 10px rgba(201, 168, 76, 0), 0 2px 12px rgba(201, 168, 76, 0.4); }
+  100% { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0), 0 2px 12px rgba(201, 168, 76, 0.4); }
+}
+
+.bac-pulse {
+  animation: bac-pulse-ring 1.8s ease-out infinite;
+}
+
+.bac-fade-enter-active,
+.bac-fade-leave-active {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bac-fade-enter-from,
+.bac-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.8) translateX(10px);
+  width: 0;
+  padding: 0;
+  overflow: hidden;
+}
 
 .hero-content {
   position: relative;
@@ -433,6 +717,11 @@ const handleVisibilityChange = () => { if (!document.hidden && isPlaying.value &
   display: flex;
   flex-direction: column;
   padding: 0 1.5rem 2rem;
+  pointer-events: none;
+}
+
+.hero-content > * {
+  pointer-events: auto;
 }
 
 .headline-block {
@@ -578,7 +867,7 @@ const handleVisibilityChange = () => { if (!document.hidden && isPlaying.value &
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: linear-gradient(90deg, rgba(5, 20, 38, 0.08) 0%, rgba(5, 20, 38, 0) 35%, rgba(5, 20, 38, 0.15) 100%);
+  background: linear-gradient(90deg, rgba(5,20,38,0.35) 0%, rgba(5,20,38,0.1) 30%, rgba(5,20,38,0) 55%);
   pointer-events: none;
 }
 
@@ -590,6 +879,8 @@ const handleVisibilityChange = () => { if (!document.hidden && isPlaying.value &
   object-fit: cover;
   display: block;
   object-position: center center;
+  mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 18%, #000 45%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 18%, #000 45%);
 }
 
 @media (max-width: 680px) {
@@ -618,22 +909,41 @@ const handleVisibilityChange = () => { if (!document.hidden && isPlaying.value &
     min-height: 180px;
     order: -1;
   }
-}
 
-@media (max-width: 767px) {
-  .video-fade-in {
-    animation: none !important;
-    transform: none !important;
+  .bottom-right-bar {
+    bottom: 1rem;
+    right: 1rem;
+    padding: 0.3rem 0.5rem;
+  }
+
+  .bar-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .bar-btn-text {
+    padding: 0 0.6rem 0 0.4rem;
+  }
+
+  .bar-label {
+    font-size: 0.55rem;
+  }
+
+  .bar-btn-gold {
+    padding: 0 0.8rem 0 0.5rem;
   }
 }
-.banner-img {
-  /* fades the photo itself from invisible → fully visible, left to right */
-  mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 18%, #000 45%);
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 18%, #000 45%);
-}
 
-.banner-img-panel::before {
-  /* reinforces it with a matching navy tint near the seam */
-  background: linear-gradient(90deg, rgba(5,20,38,0.35) 0%, rgba(5,20,38,0.1) 30%, rgba(5,20,38,0) 55%);
+@media (max-width: 380px) {
+  .bar-label {
+    display: none;
+  }
+
+  .bar-btn-text,
+  .bar-btn-gold {
+    padding: 0;
+    width: 36px;
+    justify-content: center;
+  }
 }
 </style>

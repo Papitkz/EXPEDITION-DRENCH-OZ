@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useComponentCMS } from '@/composables/useComponentCMS'
 import { useSEO } from '@/composables/useSEO'
 import NoImagePlaceholder from '@/components/NoImagePlaceholder.vue'
-import { FALLBACK_LIMITED_EXPEDITIONS } from '@/composables/useLimitedExpeditionData'
+import {
+  fetchPublishedLimitedExpeditions,
+  type LimitedExpeditionData,
+} from '@/composables/useLimitedExpeditionData'
 
 const router = useRouter()
 const cms = useComponentCMS('SpecialtyExpeditionsSection')
@@ -16,27 +19,38 @@ useSEO({
   type: 'website',
 })
 
-const EXPEDITIONS = Object.values(FALLBACK_LIMITED_EXPEDITIONS)
-  .sort((a, b) => a.sortOrder - b.sortOrder)
-  .map((e) => ({
+// Live CMS data (falls back to FALLBACK_LIMITED_EXPEDITIONS internally if
+// Firestore is empty/unavailable) — this is what AdminLimitedExpeditions edits.
+const trips = ref<LimitedExpeditionData[]>([])
+const loadingTrips = ref(true)
+
+const EXPEDITIONS = computed(() =>
+  trips.value.map((e, i) => ({
     key: e.slug,
-    slotIndex: e.sortOrder,
+    slotIndex: e.sortOrder ?? i,
     nights: `${e.nights} NIGHTS`,
     title: e.title,
     vessel: `ABOARD ${e.vesselName.toUpperCase()}`,
     host: e.host,
     date: e.dateLabel,
     description: e.description,
+    shortDescriptionption : e.shortDescription,
     icon: e.icon,
+    heroImageUrl: e.heroImageUrl,
   }))
+)
 
 const cards = computed(() =>
-  EXPEDITIONS.map((e) => {
+  EXPEDITIONS.value.map((e) => {
+    // Prefer the hero image uploaded directly on the expedition in
+    // AdminLimitedExpeditions; fall back to the older specialtyCards slot
+    // image (managed in AdminSections) only if no hero image is set yet.
     const cmsItem = cms.getSlot('specialtyCards', e.slotIndex)
+    const image = e.heroImageUrl || cmsItem?.imageUrl || ''
     return {
       ...e,
-      image: cmsItem?.imageUrl || '',
-      hasImage: !!cmsItem?.imageUrl,
+      image,
+      hasImage: !!image,
     }
   })
 )
@@ -61,6 +75,10 @@ function setupObserver() {
 }
 
 onMounted(async () => {
+  loadingTrips.value = true
+  trips.value = await fetchPublishedLimitedExpeditions()
+  loadingTrips.value = false
+
   await nextTick()
   setupObserver()
   cms.load()
@@ -144,11 +162,13 @@ onUnmounted(() => observer?.disconnect())
               </div>
             </div>
 
-            <p class="le-card-desc">{{ card.description }}</p>
+            <p class="le-card-desc">{{ card.shortDescriptionption}} </p>
 
             <p v-if="card.host" class="le-card-host">Hosted by {{ card.host }}.</p>
 
             <div class="divider"></div>
+            <p class="le-card-desc">{{ card.description}} </p>
+
 
             <div class="le-card-date">
               <svg viewBox="0 0 24 24" fill="none" stroke="#c79a5c" stroke-width="1.8">

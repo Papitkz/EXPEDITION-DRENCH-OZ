@@ -126,6 +126,51 @@ export const FALLBACK_LIMITED_EXPEDITIONS: Record<string, LimitedExpeditionData>
   },
 }
 
+// Fetches every published expedition from Firestore (`cms_limited_expeditions`),
+// ordered by sortOrder, merged over FALLBACK_LIMITED_EXPEDITIONS so admin edits
+// (title, subtitle, vessel, nights, host, dateLabel, icon, shortDescription,
+// heroImageUrl, etc.) are reflected on the /limited-expeditions card grid —
+// not just on the individual /limited-expeditions/:slug detail pages.
+export async function fetchPublishedLimitedExpeditions(): Promise<LimitedExpeditionData[]> {
+  const fallbackList = Object.values(FALLBACK_LIMITED_EXPEDITIONS).sort(
+    (a, b) => a.sortOrder - b.sortOrder
+  )
+
+  try {
+    const { db, collection, query, orderBy, getDocs } = await getFirebase()
+    // Deliberately only orderBy here (no `where` on a different field) so this
+    // never needs a Firestore composite index — a where+orderBy combo on two
+    // fields silently throws without one, which gets caught below and masks
+    // itself as "empty data" (the fallback array, with no real images/edits).
+    // isPublished is filtered client-side instead.
+    const tripsQ = query(
+      collection(db, 'cms_limited_expeditions'),
+      orderBy('sortOrder', 'asc'),
+    )
+    const snap = await getDocs(tripsQ)
+    if (snap.empty) return fallbackList
+
+    const live = snap.docs
+      .map((d: any) => ({ id: d.id, ...d.data() }) as LimitedExpeditionData)
+      .filter((t) => t.isPublished)
+
+    if (live.length === 0) return fallbackList
+
+    const liveBySlug = new Map(live.map((t) => [t.slug, t]))
+
+    // Merge: live Firestore docs take priority; any fallback entries with no
+    // matching live doc yet (e.g. not created in the CMS) still show up.
+    const merged = [
+      ...live,
+      ...fallbackList.filter((f) => !liveBySlug.has(f.slug)),
+    ]
+    return merged.sort((a, b) => a.sortOrder - b.sortOrder)
+  } catch (e) {
+    console.warn('fetchPublishedLimitedExpeditions: Firebase unavailable, using fallback', e)
+    return fallbackList
+  }
+}
+
 export function useLimitedExpeditionData(slug: string) {
   const trip = ref<LimitedExpeditionData | null>(null)
   const itinerary = ref<LimitedExpeditionItineraryDay[]>([])

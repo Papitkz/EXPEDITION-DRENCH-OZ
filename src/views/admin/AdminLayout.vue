@@ -52,6 +52,7 @@ interface NavItem {
 const baseNavItems: NavItem[] = [
   { label: 'Dashboard', icon: 'dashboard', to: '/admin/dashboard' },
   { label: 'Images', icon: 'image', to: '/admin/images' },
+  { label: 'Content', icon: 'info', to: '/admin/content' },
   { label: 'Trips & Pricing', icon: 'trips', to: '/admin/trips' },
   { label: 'Limited Expeditions', icon: 'ship', to: '/admin/limited-expeditions' },
   { label: 'Blog Posts', icon: 'blog', to: '/admin/blogs' },

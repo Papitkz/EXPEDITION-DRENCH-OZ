@@ -2,8 +2,8 @@
 import { computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSEO } from '@/composables/useSEO'
-import { useComponentCMS } from '@/composables/useComponentCMS'
 import { useLimitedExpeditionData } from '@/composables/useLimitedExpeditionData'
+import { useLimitedExpeditionMedia } from '@/composables/useLimitedExpeditionMedia'
 import PageHero from '@/components/PageHero.vue'
 import NoImagePlaceholder from '@/components/NoImagePlaceholder.vue'
 
@@ -13,51 +13,44 @@ const router = useRouter()
 const slug = computed(() => route.params.slug as string)
 
 const tripData = useLimitedExpeditionData(slug.value)
-const cms = useComponentCMS('LimitedExpeditionDetail')
+// Constructed with an empty id here (trip hasn't loaded yet) — that's fine,
+// the real id is passed explicitly into media.load() once it's known, below.
+const media = useLimitedExpeditionMedia('')
 
 const GALLERY_SLOTS = 6
-const ITINERARY_SLOTS_MAX = 9
 
-function sectionKey(field: string) {
-  return `${slug.value}_${field}`
-}
+// Hero image: prioritize uploaded media, then trip heroImageUrl, then empty
+const heroImage = computed(() => media.heroImage.value || tripData.heroImageUrl.value)
 
-const heroImage = computed(() => cms.getImageUrl(sectionKey('hero'), 0) || tripData.heroImageUrl.value)
-const aboutImage = computed(() => cms.getImageUrl(sectionKey('about'), 0))
+// About image: from uploaded media
+const aboutImage = computed(() => media.aboutImage.value)
 
-const galleryImages = computed(() =>
-  Array.from({ length: GALLERY_SLOTS }, (_, i) => {
-    const item = cms.getSlot(sectionKey('gallery'), i)
-    return {
-      src: item?.imageUrl || '',
-      caption: item?.caption || item?.title || '',
-      hasImage: !!item?.imageUrl,
-    }
-  }).filter((img) => img.hasImage)
-)
+// Gallery images: from uploaded media
+const galleryImages = computed(() => media.galleryImages.value)
 
+// Itinerary: prefer live Firestore itinerary with per-day images, then fall back to generic
 const itinerary = computed(() => {
-  // Prefer live Firestore itinerary days (admin-managed), else fall back to
-  // CMS image slots layered on a generic day structure, else show nothing.
   if (tripData.itinerary.value.length > 0) {
-    return tripData.itinerary.value.map((d) => ({
+    return tripData.itinerary.value.map((d, idx) => ({
       day: `Day ${d.dayNumber}`,
       title: d.title,
       desc: d.description,
-      image: d.imageUrl,
-      hasImage: !!d.imageUrl,
+      image: d.imageUrl || media.getItineraryImage(idx),
+      hasImage: !!(d.imageUrl || media.getItineraryImage(idx)),
     }))
   }
-  return Array.from({ length: Math.min(tripData.nights.value + 1, ITINERARY_SLOTS_MAX) }, (_, i) => {
-    const item = cms.getSlot(sectionKey('itinerary'), i)
+  // Fallback: generate day slots from media itinerary images
+  const dayCount = Math.min(tripData.nights.value + 1, 9)
+  return Array.from({ length: dayCount }, (_, i) => {
+    const imgUrl = media.getItineraryImage(i)
     return {
       day: `Day ${i + 1}`,
-      title: item?.title || '',
-      desc: item?.description || '',
-      image: item?.imageUrl || '',
-      hasImage: !!item?.imageUrl,
+      title: '',
+      desc: '',
+      image: imgUrl,
+      hasImage: !!imgUrl,
     }
-  }).filter((d) => d.title || d.desc || d.hasImage)
+  }).filter((d) => d.hasImage)
 })
 
 function goEnquire() {
@@ -73,7 +66,11 @@ function goEnquire() {
 let observer: IntersectionObserver | null = null
 
 onMounted(async () => {
-  await Promise.all([tripData.load(), cms.load()])
+  await tripData.load()
+  // Load media after we have the trip ID
+  if (tripData.trip.value?.id) {
+    await media.load(tripData.trip.value.id)
+  }
 
   observer = new IntersectionObserver(
     (entries) => entries.forEach((en) => { if (en.isIntersecting) en.target.classList.add('visible') }),
@@ -101,8 +98,8 @@ useSEO({
       :title="tripData.title.value"
       :title-italic="tripData.subtitle.value"
       :subtitle="tripData.host.value ? `Hosted by ${tripData.host.value}` : ''"
-      :image="heroImage"
-      :image-alt="tripData.title.value"
+      :fallback-image="heroImage"
+      :fallback-alt="tripData.title.value"
       height="70vh"
     >
       <template v-if="!heroImage">
@@ -174,7 +171,7 @@ useSEO({
       </div>
     </section>
 
-    <!-- Gallery (only if CMS images exist) -->
+    <!-- Gallery (only if media images exist) -->
     <section v-if="galleryImages.length" class="py-12 md:py-24" style="background: var(--color-ocean-900);">
       <div class="container mx-auto px-4 sm:px-6 lg:px-12">
         <div class="text-center mb-8 md:mb-16 section-reveal">
@@ -187,7 +184,7 @@ useSEO({
 
         <div class="columns-2 md:columns-3 gap-2 md:gap-3 space-y-2 md:space-y-3 section-reveal">
           <div v-for="(img, i) in galleryImages" :key="i" class="relative overflow-hidden break-inside-avoid mb-2 md:mb-3 group">
-            <img :src="img.src" :alt="img.caption" class="w-full h-auto object-cover" />
+            <img :src="img.src" :alt="img.caption || tripData.title.value" class="w-full h-auto object-cover" />
             <div v-if="img.caption" class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-3">
               <p class="text-white font-display text-sm">{{ img.caption }}</p>
             </div>
