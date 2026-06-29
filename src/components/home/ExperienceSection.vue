@@ -12,12 +12,8 @@
     <div class="experience-content">
       <div class="experience-text">
         <h2 class="experience-headline">
-          REMOTE. PRISTINE. UNTOUCHED.
+          OUR DESTINATIONS
         </h2>
-
-        <p class="experience-subhead">
-          BEYOND THE DAY BOATS.
-        </p>
 
         <p class="experience-body">
           Sleep anchored on Ningaloo Reef and be the first in the water each and every day.
@@ -57,20 +53,6 @@
         </div>
 
         <svg class="route-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <defs>
-            <mask id="route-mask">
-              <path
-                class="mask-line"
-                :class="{ 'mask-line--drawn': routeDrawn }"
-                d="M 88,80 Q 73,64 56,46 T 36,28 T 16,17"
-                fill="none"
-                stroke="#ffffff"
-                stroke-width="2"
-                stroke-linecap="round"
-              />
-            </mask>
-          </defs>
-
           <path
             class="route-trail"
             d="M 88,80 Q 73,64 56,46 T 36,28 T 16,17"
@@ -79,7 +61,6 @@
             stroke-width="0.6"
             stroke-linecap="round"
             stroke-dasharray="1.5 2.5"
-            mask="url(#route-mask)"
           />
         </svg>
 
@@ -117,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useComponentCMS } from '@/composables/useComponentCMS'
 import { useParallax } from '@/composables/useParallax'
 
@@ -139,35 +120,35 @@ const waypoints = ref([
     label: 'MURION\nISLANDS',
     x: 16,
     y: 17,
-    desc: 'Remote island chain. Coral gardens and turtle nesting beaches.',
+    desc: 'Uninhabited pristine sandy white beaches surrounded by coral reefs.',
   },
   {
-    id: 'gulf',
-    label: 'EXMOUTH\nGULF',
+    id: 'coral-bay',
+    label: 'CORAL\nBAY',
     x: 36,
     y: 28,
-    desc: 'Protected anchorage with calm waters and night snorkelling.',
-  },
-  {
-    id: 'reef',
-    label: 'NINGALOO\nREEF',
-    x: 56,
-    y: 46,
-    desc: 'Whale shark territory and untouched reef systems.',
+    desc: 'Southern most anchorage known for its manta ray population and fish cleaning station.',
   },
   {
     id: 'yardie',
     label: 'YARDIE\nCREEK',
-    x: 73,
-    y: 64,
-    desc: 'Turquoise canyon waters and kayaking adventures.',
+    x: 56,
+    y: 46,
+    desc: 'Crystal blue turquoise waters and kayaking adventures.',
   },
   {
-    id: 'exmouth',
-    label: 'EXMOUTH',
+    id: 'cape-range',
+    label: 'CAPE\nRANGE',
+    x: 73,
+    y: 64,
+    desc: 'Most famous snorkel and dive sites along the Ningaloo Reef.',
+  },
+  {
+    id: 'gulf',
+    label: 'THE\nGULF',
     x: 88,
     y: 80,
-    desc: 'Final anchorage and departure point.',
+    desc: 'Protected anchorages known for rare wildlife along the mangrove forests. Humpback whale watching hotspot from August to October.',
   },
 ])
 
@@ -176,30 +157,8 @@ function toggleWaypoint(id: string) {
   activeWaypoint.value = activeWaypoint.value === id ? null : id
 }
 
-const routeDrawn = ref(false)
-let observer: IntersectionObserver | null = null
-
 onMounted(async () => {
   await cms.load()
-  observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          setTimeout(() => {
-            routeDrawn.value = true
-          }, 400)
-        }
-      })
-    },
-    { threshold: 0.25 }
-  )
-
-  const section = document.getElementById('experience')
-  if (section) observer.observe(section)
-})
-
-onUnmounted(() => {
-  observer?.disconnect()
 })
 </script>
 
@@ -289,18 +248,8 @@ onUnmounted(() => {
   color: #f5f1e8;
   line-height: 1.18;
   text-transform: uppercase;
-  margin: 0 0 0.45rem;
-  letter-spacing: 0.01em;
-}
-
-.experience-subhead {
-  font-family: var(--font-heading);
-  font-size: 0.72rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: #c9a84c;
-  font-weight: 700;
   margin: 0 0 0.85rem;
+  letter-spacing: 0.01em;
 }
 
 .experience-body {
@@ -326,14 +275,6 @@ onUnmounted(() => {
   opacity: 0.95;
   pointer-events: none;
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.6));
-  animation: compass-float 6s ease-in-out infinite;
-}
-
-@keyframes compass-float {
-  0%, 100% { transform: translateY(0) rotate(0deg); }
-  25% { transform: translateY(-2px) rotate(0.5deg); }
-  50% { transform: translateY(0) rotate(0deg); }
-  75% { transform: translateY(2px) rotate(-0.5deg); }
 }
 
 .route-svg {
@@ -342,16 +283,6 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   z-index: 2;
-}
-
-.mask-line {
-  stroke-dasharray: 200;
-  stroke-dashoffset: 200;
-  transition: stroke-dashoffset 2.8s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.mask-line--drawn {
-  stroke-dashoffset: 0;
 }
 
 .route-trail {

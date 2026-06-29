@@ -131,7 +131,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (transitionTimeout) clearTimeout(transitionTimeout)
-  if (controlsTimeout) clearTimeout(controlsTimeout)
+  if (controlsTimeout.value) clearTimeout(controlsTimeout.value)
   if (resizeObserver) resizeObserver.disconnect()
   if (playAttemptInterval) clearInterval(playAttemptInterval)
   window.removeEventListener('message', handleCalendlyClose)
@@ -211,8 +211,8 @@ const togglePlayPause = () => {
 const handleVideoClick = () => {
   togglePlayPause()
   showControls.value = true
-  if (controlsTimeout) clearTimeout(controlsTimeout)
-  controlsTimeout = window.setTimeout(() => {
+  if (controlsTimeout.value) clearTimeout(controlsTimeout.value)
+  controlsTimeout.value = window.setTimeout(() => {
     showControls.value = false
   }, 2000)
 }
