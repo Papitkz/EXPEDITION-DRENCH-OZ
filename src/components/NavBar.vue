@@ -58,7 +58,7 @@ function isActive(path: string) {
   <header class="navbar" :class="{ 'navbar--scrolled': scrolled }">
     <div class="navbar-inner">
       <router-link to="/" class="logo-block">
-        <img src="/images/logo-header.png" alt="Expedition OZ" class="logo-img" />
+        <img src="/images/logo-header.png" alt="Expedition OZ" class="logo-img " />
       </router-link>
 
       <nav class="desktop-nav">
@@ -704,5 +704,8 @@ function isActive(path: string) {
     display: block;
     object-fit: contain;
   }
+}
+.navbar-inner {
+  padding: 0 2rem 0 1rem; /* less padding on the left */
 }
 </style>
