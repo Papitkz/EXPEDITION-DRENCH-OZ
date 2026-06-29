@@ -1,514 +1,928 @@
-<script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useComponentCMS } from '@/composables/useComponentCMS'
-import NoImagePlaceholder from '@/components/NoImagePlaceholder.vue'
-import { useParallax } from '@/composables/useParallax'
-
-const cms = useComponentCMS('InclusionsSection')
-
-// ─── Private & Hosted Expeditions banner photo (slot 0 of "charterBanner") ──
-const charterImage = computed(() => cms.getImageUrl('charterBanner', 0))
-const charterAlt = computed(() => cms.getAlt('charterBanner', 0) || 'Guests gathered on deck at sunset during a private charter expedition')
-
-// ─── Static feature icons (code-driven, not CMS) ───────────────────────────
-const features = [
-  {
-    icon: 'sail',
-    title: 'EXPEDITION SAILING FLEET',
-  },
-  {
-    icon: 'group',
-    title: 'SMALL GROUP DEPARTURES',
-  },
-  {
-    icon: 'chef',
-    title: 'CHEF-CRAFTED DINING',
-  },
-  {
-    icon: 'leaf',
-    title: 'LOCALLY SOURCED FOOD & DRINKS',
-  },
-  {
-    icon: 'location',
-    title: 'LOCAL OCEAN KNOWLEDGE',
-  },
-]
-
-// Parallax on charter photo
-const charterImgRef = ref<HTMLElement | null>(null)
-useParallax(charterImgRef, { speed: 0.2, clamp: 80 })
-
-onMounted(() => {
-  cms.load()
-})
-</script>
-
 <template>
-  <section class="charter-wrapper">
-    <!-- ─── Private & Hosted Expeditions banner ─── -->
-    <div class="charter-banner">
-      <div class="charter-photo">
-        <div class="charter-parallax-wrap">
-          <img v-if="charterImage" ref="charterImgRef" :src="charterImage" :alt="charterAlt" loading="lazy" class="charter-parallax-img" />
-          <NoImagePlaceholder v-else dark label="Private Charter" />
-        </div>
+  <section class="ocean-wrapper">
+    <div class="ocean-container">
+      <div class="header-area">
+        <h2 class="main-title">CURATED BY THE OCEAN</h2>
+        <p class="main-description">
+          Each expedition route is guided by weather, wildlife activity and ocean conditions
+          to deliver the best possible experience at sea.
+        </p>
       </div>
 
-      <div class="charter-content">
-        <div class="charter-watermark" aria-hidden="true">
-          <svg width="220" height="220" viewBox="0 0 160 160" fill="none">
-            <defs>
-              <radialGradient id="compassFace" cx="38%" cy="32%" r="75%">
-                <stop offset="0%" stop-color="#e8c878" stop-opacity="0.22" />
-                <stop offset="55%" stop-color="#c9a84c" stop-opacity="0.08" />
-                <stop offset="100%" stop-color="#c9a84c" stop-opacity="0" />
-              </radialGradient>
-              <linearGradient id="ringLight" x1="20%" y1="10%" x2="80%" y2="90%">
-                <stop offset="0%" stop-color="#f3dc9c" stop-opacity="0.85" />
-                <stop offset="45%" stop-color="#c9a84c" stop-opacity="0.4" />
-                <stop offset="100%" stop-color="#7a5f1f" stop-opacity="0.25" />
-              </linearGradient>
-              <linearGradient id="ringShade" x1="80%" y1="90%" x2="20%" y2="10%">
-                <stop offset="0%" stop-color="#f3dc9c" stop-opacity="0.6" />
-                <stop offset="50%" stop-color="#c9a84c" stop-opacity="0.25" />
-                <stop offset="100%" stop-color="#5c4716" stop-opacity="0.15" />
-              </linearGradient>
-              <linearGradient id="needleGold" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#f6e3ac" />
-                <stop offset="50%" stop-color="#c9a84c" />
-                <stop offset="100%" stop-color="#8a6b22" />
-              </linearGradient>
-              <linearGradient id="needleShadow" x1="100%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stop-color="#5c4716" />
-                <stop offset="100%" stop-color="#2e2308" />
-              </linearGradient>
-              <radialGradient id="pivotShine" cx="35%" cy="30%" r="65%">
-                <stop offset="0%" stop-color="#fdf3d8" />
-                <stop offset="60%" stop-color="#c9a84c" />
-                <stop offset="100%" stop-color="#7a5f1f" />
-              </radialGradient>
-              <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur stdDeviation="1.2" />
-              </filter>
-            </defs>
-
-            <circle cx="80" cy="80" r="76" fill="url(#compassFace)" />
-            <circle cx="80" cy="80" r="74" stroke="url(#ringLight)" stroke-width="1.1" />
-            <circle cx="80" cy="80" r="74" stroke="url(#ringShade)" stroke-width="0.4" />
-            <circle cx="80" cy="80" r="62" stroke="url(#ringLight)" stroke-width="0.6" stroke-opacity="0.7" />
-            <circle cx="80" cy="80" r="50" stroke="#c9a84c" stroke-width="0.5" stroke-dasharray="2 4" stroke-opacity="0.45" />
-            <g stroke="url(#ringLight)" stroke-width="0.5" stroke-opacity="0.55">
-              <line x1="80" y1="6" x2="80" y2="154" />
-              <line x1="6" y1="80" x2="154" y2="80" />
-              <line x1="25.7" y1="25.7" x2="134.3" y2="134.3" />
-              <line x1="134.3" y1="25.7" x2="25.7" y2="134.3" />
-            </g>
-            <g stroke="#c9a84c" stroke-opacity="0.4" stroke-width="0.5">
-              <line x1="80" y1="14" x2="80" y2="24" />
-              <line x1="80" y1="136" x2="80" y2="146" />
-              <line x1="14" y1="80" x2="24" y2="80" />
-              <line x1="136" y1="80" x2="146" y2="80" />
-            </g>
-            <g filter="url(#softGlow)" opacity="0.55">
-              <path d="M80 18 L88 80 L80 142 L72 80 Z" fill="url(#needleShadow)" />
-              <path d="M18 80 L80 88 L142 80 L80 72 Z" fill="url(#needleShadow)" opacity="0.5" />
-            </g>
-            <path d="M80 16 L89 80 L80 96 L71 80 Z" fill="url(#needleGold)" />
-            <path d="M80 96 L89 80 L80 144 L71 80 Z" fill="url(#needleShadow)" />
-            <path d="M16 80 L80 89 L96 80 L80 71 Z" fill="url(#needleGold)" opacity="0.85" />
-            <path d="M96 80 L80 89 L144 80 L80 71 Z" fill="url(#needleShadow)" opacity="0.7" />
-            <circle cx="80" cy="80" r="6.5" fill="url(#pivotShine)" />
-            <circle cx="80" cy="80" r="6.5" stroke="#fdf3d8" stroke-width="0.4" stroke-opacity="0.6" />
-            <circle cx="78" cy="78" r="1.6" fill="#fdf3d8" fill-opacity="0.85" />
-            <text x="80" y="11" text-anchor="middle" font-family="Montserrat, sans-serif" font-size="7" font-weight="700" fill="#c9a84c" fill-opacity="0.55" letter-spacing="1">N</text>
-            <text x="80" y="154" text-anchor="middle" font-family="Montserrat, sans-serif" font-size="7" font-weight="700" fill="#c9a84c" fill-opacity="0.4" letter-spacing="1">S</text>
-            <text x="151" y="83.5" text-anchor="middle" font-family="Montserrat, sans-serif" font-size="7" font-weight="700" fill="#c9a84c" fill-opacity="0.4" letter-spacing="1">E</text>
-            <text x="9" y="83.5" text-anchor="middle" font-family="Montserrat, sans-serif" font-size="7" font-weight="700" fill="#c9a84c" fill-opacity="0.4" letter-spacing="1">W</text>
-          </svg>
-        </div>
-
-        <div class="charter-header">
-          <div class="charter-icon">
-            <!-- <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="7" r="3" />
-              <path d="M5 21v-1a5 5 0 0 1 5-5h0a5 5 0 0 1 5 5v1" />
-              <circle cx="5" cy="9" r="2" />
-              <path d="M1 21v-1a3 3 0 0 1 3-3" />
-              <circle cx="19" cy="9" r="2" />
-              <path d="M23 21v-1a3 3 0 0 0-3-3" />
-            </svg> -->
-          </div>
-
-          <div class="charter-header-text">
-            <p class="charter-overline">PRIVATE &amp; HOSTED EXPEDITIONS</p>
-            <h2 class="charter-title">The Boat. Your People. Your Adventure.</h2>
-          </div>
-        </div>
-
-        <div class="charter-divider"></div>
-
-        <p class="charter-text">
-          Our expedition yachts are available for private charters, creator-hosted trips,
-          club expeditions, brand partnerships and community voyages.
-        </p>
-        <p class="charter-text">
-          Perfect for families, dive clubs, creators, photographers, retreats, ocean brands
-          and private groups who want exclusive use of the vessel.
-        </p>
-        <p class="charter-text charter-text--muted">
-          Private and hosted departures can be built around our 3-night, 5-night
-          or 8-night expedition formats, depending on vessel availability and season.
-        </p>
-
-        <router-link to="/contact" class="charter-cta">
-          Enquire About a Private Charter
-        </router-link>
-      </div>
-    </div>
-
-    <!-- ─── Closer to Nature icon strip ─── -->
-    <div class="nature-strip">
-      <h2 class="nature-strip-title">Closer to Nature. Further from the Crowds.</h2>
-
-      <div class="nature-icons">
+      <div
+        class="experience-grid"
+        ref="carouselRef"
+        @scroll="onCarouselScroll"
+        @touchstart="pauseAutoplay"
+      >
         <div
-          v-for="feature in features"
-          :key="feature.title"
-          class="nature-icon-item"
+          v-for="item in experiences"
+          :key="item.label"
+          class="experience-card"
         >
-          <div class="nature-icon">
-            <svg
-              width="58"
-              height="58"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.1"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <template v-if="feature.icon === 'sail'">
-                <path d="M2 20h20L12 4 2 20z" />
-                <path d="M12 4v16" />
-              </template>
-
-              <template v-if="feature.icon === 'group'">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </template>
-
-              <template v-if="feature.icon === 'chef'">
-                <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z" />
-                <line x1="6" y1="17" x2="18" y2="17" />
-              </template>
-
-              <template v-if="feature.icon === 'leaf'">
-                <path d="M11 20A7 7 0 0 1 9.8 6.6C13.4 4.2 18 3 21 3c-1 3-3.5 7.5-6.5 10.5A7 7 0 0 1 11 20z" />
-                <path d="M11 20c-2.5-2.5-2.5-6.5 0-9" />
-              </template>
-
-              <template v-if="feature.icon === 'location'">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                <circle cx="12" cy="10" r="3" />
-              </template>
-            </svg>
+          <!-- Floating Preview Card Above (Desktop Only) -->
+          <div class="v-hover-floating-card">
+            <div class="v-floating-image-wrap">
+              <img 
+                v-if="item.image"
+                :src="item.image" 
+                :alt="item.alt || item.label" 
+                class="v-floating-image"
+              />
+              <div v-else class="v-floating-placeholder">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.83 0L6 21"/></svg>
+              </div>
+              <div class="v-floating-overlay"></div>
+            </div>
+            <div class="v-floating-body">
+              <span class="v-hover-tag">Ocean Experience</span>
+              <h3 class="v-hover-title">{{ item.label }}</h3>
+              <div class="v-hover-divider"></div>
+              <p class="v-hover-text">{{ item.description }}</p>
+            </div>
           </div>
 
-          <h3 class="nature-icon-title">{{ feature.title }}</h3>
+          <!-- Base Card Grid Trigger -->
+          <div class="experience-image-wrap">
+            <img
+              v-if="item.image"
+              :src="item.image"
+              :alt="item.alt || item.label"
+              class="experience-image"
+            />
+            <div v-else class="experience-image-empty">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-3.09-3.09a2 2 0 0 0-2.83 0L6 21"/></svg>
+            </div>
+            <div class="experience-overlay"></div>
+          </div>
+
+          <div class="experience-label">
+            <h3 class="experience-title">{{ item.label }}</h3>
+          </div>
+        </div>
+      </div>
+
+      <!-- Carousel controls (mobile only) -->
+      <div class="carousel-controls" v-if="isMobile">
+        <button
+          class="carousel-arrow carousel-arrow--prev"
+          type="button"
+          aria-label="Previous slide"
+          @click="prevSlide"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+
+        <div class="carousel-dots">
+          <button
+            v-for="(item, i) in experiences"
+            :key="'dot-' + item.label"
+            class="dot"
+            :class="{ active: i === currentIndex }"
+            :aria-label="'Go to slide ' + (i + 1)"
+            type="button"
+            @click="goToSlide(i)"
+          ></button>
+        </div>
+
+        <button
+          class="carousel-arrow carousel-arrow--next"
+          type="button"
+          aria-label="Next slide"
+          @click="nextSlide"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <div class="nature-box">
+        <div class="nature-left">
+          <img
+            v-if="natureBgImage"
+            :src="natureBgImage"
+            :alt="natureBgAlt || 'Boat'"
+            class="nature-image"
+          />
+          <img
+            v-else
+            src="https://cdn.pixabay.com/photo/2015/03/31/13/34/ship-701079_1280.jpg"
+            alt="Boat"
+            class="nature-image"
+          />
+          <div class="nature-gradient"></div>
+          <div class="nature-content">
+            <h2 class="nature-title">
+              CLOSER TO NATURE.<br>
+              FURTHER FROM THE CROWDS.
+            </h2>
+            <p class="nature-description">
+              Small group expeditions with local knowledge,
+              experienced crew and genuine passion for
+              Ningaloo Reef.
+            </p>
+          </div>
+        </div>
+
+        <div class="nature-right">
+          <div
+            v-for="feature in features"
+            :key="feature.title"
+            class="feature-card"
+          >
+            <div class="feature-icon">
+              <svg
+                width="42"
+                height="42"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <template v-if="feature.icon === 'sail'">
+                  <path d="M2 20h20L12 4 2 20z" />
+                  <path d="M12 4v16" />
+                </template>
+
+                <template v-if="feature.icon === 'group'">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </template>
+
+                <template v-if="feature.icon === 'chef'">
+                  <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z" />
+                  <line x1="6" y1="17" x2="18" y2="17" />
+                </template>
+
+                <template v-if="feature.icon === 'leaf'">
+                  <path d="M11 20A7 7 0 0 1 9.8 6.6C13.4 4.2 18 3 21 3c-1 3-3.5 7.5-6.5 10.5A7 7 0 0 1 11 20z" />
+                  <path d="M11 20c-2.5-2.5-2.5-6.5 0-9" />
+                </template>
+
+                <template v-if="feature.icon === 'location'">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </template>
+              </svg>
+            </div>
+
+            <div>
+              <h3 class="feature-title">{{ feature.title }}</h3>
+              <p class="feature-text">{{ feature.description }}</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </section>
 </template>
 
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useComponentCMS } from '@/composables/useComponentCMS'
+
+const cms = useComponentCMS('InclusionsSection')
+
+// ─── Hardcoded defaults (text + fallback images) ───────────────────────────
+const EXPERIENCE_DEFAULTS = [
+  {
+    label: 'MANTA RAY ENCOUNTERS',
+    description: 'Swim beside graceful manta rays in crystal clear waters.',
+    fallbackImage: 'https://cdn.pixabay.com/photo/2025/08/05/18/22/manta-9757343_1280.jpg',
+  },
+  {
+    label: 'WHALE WATCHING',
+    description: 'Witness humpback whales during seasonal migration.',
+    fallbackImage: 'https://cdn.pixabay.com/photo/2018/08/08/16/15/sailing-boat-3592517_1280.jpg',
+  },
+  {
+    label: 'REEF SNORKELLING',
+    description: 'Explore untouched reef systems with expert guides.',
+    fallbackImage: 'https://cdn.pixabay.com/photo/2025/01/12/15/57/diver-9328625_1280.jpg',
+  },
+  {
+    label: 'REMOTE BEACH EXPLORATION',
+    description: 'Discover hidden beaches away from the crowds.',
+    fallbackImage: 'https://cdn.pixabay.com/photo/2019/11/21/00/28/tundra-4641439_1280.jpg',
+  },
+  {
+    label: 'KAYAKING YARDIE CREEK',
+    description: 'Paddle through breathtaking canyon landscapes.',
+    fallbackImage: 'https://cdn.pixabay.com/photo/2020/02/03/03/04/kayak-4814610_1280.jpg',
+  },
+  {
+    label: 'YOGA & BREATHWORK',
+    description: 'Reconnect your body and mind with ocean energy.',
+    fallbackImage: 'https://cdn.pixabay.com/photo/2019/06/26/09/52/shit-image-4300034_1280.jpg',
+  },
+  {
+    label: 'SUNSET SAILING',
+    description: 'Enjoy chef crafted dining under golden skies.',
+    fallbackImage: 'https://cdn.pixabay.com/photo/2020/04/22/07/41/sunset-5076385_1280.jpg',
+  },
+  {
+    label: 'EXPEDITION RIB ADVENTURES',
+    description: 'High speed exploration to remote marine locations.',
+    fallbackImage: 'https://cdn.pixabay.com/photo/2024/01/05/13/59/ship-8489587_1280.jpg',
+  },
+]
+
+// ─── Merge CMS data over defaults ─────────────────────────────────────────
+const experiences = computed(() => {
+  const cmsCards = cms.getSection('experienceCards')
+
+  return EXPERIENCE_DEFAULTS.map((def, index) => {
+    const cmsItem = cmsCards.find((i) => i.slotIndex === index)
+    return {
+      label:       cmsItem?.title       || def.label,
+      description: cmsItem?.description || def.description,
+      image:       cmsItem?.imageUrl    || def.fallbackImage,
+      alt:         cmsItem?.alt         || def.label,
+    }
+  })
+})
+
+// ─── Nature box background image (slot 0 of "natureBg" section) ───────────
+const natureBgImage = computed(() => cms.getImageUrl('natureBg', 0))
+const natureBgAlt   = computed(() => cms.getAlt('natureBg', 0))
+
+// ─── Static feature cards (icons are code-driven, not CMS) ────────────────
+const features = [
+  {
+    icon: 'sail',
+    title: 'EXPEDITION SAILING FLEET',
+    description: 'Purpose built vessels for true ocean adventure.',
+  },
+  {
+    icon: 'group',
+    title: 'SMALL GROUP EXPEDITIONS',
+    description: 'Maximum 12 guests for a personal experience.',
+  },
+  {
+    icon: 'chef',
+    title: 'CHEF CRAFTED DINING',
+    description: 'Delicious, nutritious meals prepared by our onboard chef.',
+  },
+  {
+    icon: 'leaf',
+    title: 'LOCALLY SOURCED FOOD & DRINKS',
+    description: 'We are proud that our food and drinks are locally sourced.',
+  },
+  {
+    icon: 'location',
+    title: 'LOCAL OCEAN KNOWLEDGE',
+    description: 'Expert crew with unmatched local insight.',
+  },
+]
+
+// ─── Mobile carousel: finger swipe (native scroll-snap) + autoplay ────────
+const carouselRef = ref<HTMLElement | null>(null)
+const currentIndex = ref(0)
+const isMobile = ref(false)
+
+const totalSlides = computed(() => experiences.value.length)
+
+const CAROUSEL_GAP = 12       // must match the gap used in .experience-grid @ 480px
+const AUTOPLAY_DELAY = 4000   // ms between auto-advances
+const RESUME_DELAY = 5000     // ms to wait before resuming autoplay after touch
+
+let autoplayTimer: ReturnType<typeof setInterval> | null = null
+let resumeTimer: ReturnType<typeof setTimeout> | null = null
+let scrollSettleTimer: ReturnType<typeof setTimeout> | null = null
+
+function checkIsMobile() {
+  isMobile.value = window.matchMedia('(max-width: 480px)').matches
+}
+
+function scrollToSlide(index: number, smooth = true) {
+  const track = carouselRef.value
+  const card = track?.children[index] as HTMLElement | undefined
+  if (!track || !card) return
+
+  track.scrollTo({
+    left: card.offsetLeft,
+    behavior: smooth ? 'smooth' : 'auto',
+  })
+  currentIndex.value = index
+}
+
+function nextSlide() {
+  scrollToSlide((currentIndex.value + 1) % totalSlides.value)
+}
+
+function prevSlide() {
+  scrollToSlide((currentIndex.value - 1 + totalSlides.value) % totalSlides.value)
+}
+
+function startAutoplay() {
+  stopAutoplay()
+  autoplayTimer = setInterval(() => {
+    if (isMobile.value) nextSlide()
+  }, AUTOPLAY_DELAY)
+}
+
+function stopAutoplay() {
+  if (autoplayTimer) {
+    clearInterval(autoplayTimer)
+    autoplayTimer = null
+  }
+}
+
+// Called on touchstart: pause autoplay while the user is interacting,
+// then resume it after a short idle period
+function pauseAutoplay() {
+  stopAutoplay()
+  if (resumeTimer) clearTimeout(resumeTimer)
+  resumeTimer = setTimeout(() => {
+    if (isMobile.value) startAutoplay()
+  }, RESUME_DELAY)
+}
+
+function goToSlide(index: number) {
+  scrollToSlide(index)
+  pauseAutoplay()
+}
+
+// Keep the active dot in sync while the user swipes by hand
+function onCarouselScroll() {
+  if (scrollSettleTimer) clearTimeout(scrollSettleTimer)
+  scrollSettleTimer = setTimeout(() => {
+    const track = carouselRef.value
+    if (!track) return
+
+    const cardWidth = (track.children[0] as HTMLElement | undefined)?.offsetWidth || 1
+    const index = Math.round(track.scrollLeft / (cardWidth + CAROUSEL_GAP))
+
+    currentIndex.value = Math.min(Math.max(index, 0), totalSlides.value - 1)
+  }, 100)
+}
+
+function handleResize() {
+  const wasMobile = isMobile.value
+  checkIsMobile()
+
+  if (isMobile.value && !wasMobile) {
+    startAutoplay()
+  } else if (!isMobile.value && wasMobile) {
+    stopAutoplay()
+    if (resumeTimer) clearTimeout(resumeTimer)
+  }
+}
+
+onMounted(() => {
+  cms.load()
+
+  checkIsMobile()
+  window.addEventListener('resize', handleResize)
+
+  if (isMobile.value) startAutoplay()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  stopAutoplay()
+  if (resumeTimer) clearTimeout(resumeTimer)
+  if (scrollSettleTimer) clearTimeout(scrollSettleTimer)
+})
+</script>
+
 <style scoped>
-.charter-wrapper {
+:global(html, body) {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+:global(*) {
+  box-sizing: border-box;
+}
+
+.ocean-wrapper {
   width: 100vw;
   max-width: 100vw;
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
+  background: radial-gradient(circle at top, #06314f 0%, #041a2b 55%);
+  padding: 60px 20px 40px 20px;
+  overflow: visible; 
 }
 
-/* ─── Private & Hosted Expeditions banner ───────────────────────────── */
-.charter-banner {
+.ocean-container {
+  width: 100%;
+  margin: 0 auto;
+}
+
+.header-area {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.main-title {
+  color: #c69a45;
+  font-size: clamp(1.4rem, 2vw, 2rem);
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  margin-bottom: 10px;
+  font-family: 'Playfair Display', serif;
+}
+
+.main-description {
+  color: rgba(255,255,255,0.75);
+  max-width: 720px;
+  margin: auto;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+.experience-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  background: #071a2b;
-  min-height: 420px;
-  width: calc(100% - 3rem);
-  margin: 0 auto 3rem;
-  border: 1px solid rgba(201, 168, 76, 0.35);
-  border-radius: 6px;
-  overflow: hidden;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 12px;
+  margin-top: 140px;
+  margin-bottom: 40px;
 }
 
-.charter-photo {
+.carousel-controls {
+  display: none;
+}
+
+.experience-card {
   position: relative;
+  border: 1px solid rgba(198,154,69,0.25);
+  overflow: visible;
+  background: rgba(4,26,43,0.4);
+  transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.experience-card:hover {
+  transform: translateY(-2px);
+  border-color: #c69a45;
+  z-index: 50;
+}
+
+.experience-image-wrap {
+  position: relative;
+  aspect-ratio: 1 / 1;
   overflow: hidden;
 }
 
-.charter-parallax-wrap {
-  position: absolute;
-  inset: -12%;
-}
-
-.charter-parallax-img {
+.experience-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  will-change: transform;
-  transform: translate3d(0, 0, 0) scale(1.08);
+  transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
-.charter-photo img,
-.charter-photo :deep(.no-image-placeholder) {
+.experience-image-empty {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.charter-content {
-  position: relative;
-  padding: 3rem 3.5rem 3rem 3.7rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.charter-watermark {
-  position: absolute;
-  top: 50%;
-  right: -55px;
-  transform: translateY(-50%);
-  pointer-events: none;
-  opacity: 0.35;
-}
-
-.charter-header {
-  position: relative;
-  z-index: 2;
   display: flex;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 0.9rem;
+  justify-content: center;
+  background: rgba(4,26,43,0.6);
+  color: rgba(198,154,69,0.3);
 }
 
-.charter-icon {
-  flex-shrink: 0;
+.experience-card:hover .experience-image {
+  transform: scale(1.05);
+}
+
+.experience-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(4,26,43,0.9),
+    rgba(4,26,43,0.3),
+    transparent
+  );
+}
+
+/* ==========================================================================
+   Floating Tooltip Configurations
+   ========================================================================== */
+.v-hover-floating-card {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  width: 260px;
+  background: #041a2b;
+  border: 1px solid #c69a45;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, transform 0.35s cubic-bezier(0.25, 1, 0.5, 1), visibility 0.3s;
+  pointer-events: none;
+  border-radius: 2px;
+  overflow: hidden; 
+}
+
+.v-floating-image-wrap {
+  position: relative;
+  width: 100%;
+  height: 130px;
+  overflow: hidden;
+}
+
+.v-floating-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1);
+  transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.v-floating-placeholder {
+  width: 100%;
+  height: 100%;
   display: flex;
-  margin-left: -3.5rem;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4,26,43,0.8);
+  color: rgba(198,154,69,0.3);
 }
 
-.charter-header-text {
-  display: flex;
-  flex-direction: column;
+.v-floating-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    #041a2b 0%,
+    rgba(4, 26, 43, 0.2) 60%,
+    transparent 100%
+  );
 }
 
-.charter-overline {
-  color: #c9a84c;
-  font-family: var(--font-heading);
-  font-size: 1.65rem;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  margin-bottom: 0.3rem;
-}
-
-.charter-title {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  color: #c9a84c;
-  line-height: 1.35;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  max-width: 480px;
-}
-
-.charter-divider {
-  position: relative;
-  z-index: 2;
-  width: 52px;
-  height: 1px;
-  background: #c9a84c;
-  margin-bottom: 1.2rem;
-}
-
-.charter-text {
-  position: relative;
-  z-index: 2;
-  color: rgba(248, 245, 239, 0.85);
-  font-family: var(--font-body);
-  font-size: 0.92rem;
-  line-height: 1.6;
-  max-width: 460px;
-  margin-bottom: 0.75rem;
-}
-
-.charter-text--muted {
-  color: rgba(248, 245, 239, 0.65);
-  margin-bottom: 1.3rem;
-}
-
-.charter-cta {
-  position: relative;
-  z-index: 2;
-  display: inline-block;
-  align-self: flex-start;
-  padding: 14px 32px;
-  background: #c9a84c;
-  color: #071a2b;
-  font-family: var(--font-heading);
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  text-decoration: none;
-  transition: background 0.3s ease, transform 0.2s ease;
-}
-
-.charter-cta:hover {
-  background: #e8c05a;
-  transform: translateY(-1px);
-}
-
-/* ─── Closer to Nature icon strip ───────────────────────────────────── */
-.nature-strip {
-  background: #071a2b;
-  border-top: 1px solid rgba(201, 168, 76, 0.25);
-  border-bottom: 1px solid rgba(201, 168, 76, 0.25);
-  padding: 3.25rem 2rem 3.75rem;
+.v-floating-body {
+  padding: 14px;
   text-align: center;
 }
 
-.nature-strip-title {
-  font-family: var(--font-display);
-  font-size: clamp(1.3rem, 2vw, 1.7rem);
+/* Active Hover Transitions */
+.experience-card:hover .v-hover-floating-card {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
+.experience-card:hover .v-floating-image {
+  transform: scale(1.12);
+}
+
+/* Anchor Pointers */
+.v-hover-floating-card::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 7px;
+  border-style: solid;
+  border-color: #041a2b transparent transparent transparent;
+}
+
+.v-hover-floating-card::before {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 8px;
+  border-style: solid;
+  border-color: #c69a45 transparent transparent transparent;
+  z-index: -1;
+}
+
+.v-hover-tag {
+  color: #c69a45;
+  font-size: 0.58rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   font-weight: 600;
-  color: #f8f5ef;
-  letter-spacing: 0.02em;
-  margin-bottom: 2.25rem;
+  display: block;
+  margin-bottom: 4px;
 }
 
-.nature-icons {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 1.5rem 1rem;
-  max-width: 1100px;
-  margin: 0 auto;
+.v-hover-title {
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0.04em;
+  margin: 0 auto 6px auto;
+}
+
+.v-hover-divider {
+  width: 24px;
+  height: 1px;
+  background: rgba(198, 154, 69, 0.5);
+  margin: 0 auto 8px auto;
+}
+
+.v-hover-text {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.72rem;
+  line-height: 1.4;
+  margin: 0;
+  font-weight: 300;
+}
+
+/* ==========================================================================
+   Base Structure Components Continuation
+   ========================================================================== */
+.experience-label {
+  min-height: 62px;
+  display: flex;
+  align-items: center;
   justify-content: center;
+  padding: 10px;
+  text-align: center;
+  background: #041a2b;
 }
 
-.nature-icon-item {
+.experience-title {
+  color: white;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+}
+
+.nature-box {
+  border: 1px solid rgba(198,154,69,0.35);
+  display: grid;
+  grid-template-columns: 34% 66%;
+  overflow: hidden;
+  background: rgba(255,255,255,0.02);
+  margin-top: 40px;
+}
+
+.nature-left {
+  position: relative;
+  min-height: 340px;
+}
+
+.nature-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.nature-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(4,26,43,0.95),
+    rgba(4,26,43,0.45),
+    transparent
+  );
+}
+
+.nature-content {
+  position: relative;
+  z-index: 2;
+  padding: 28px;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.9rem;
+  justify-content: flex-end;
 }
 
-.nature-icon {
-  color: #c9a84c;
+.nature-title {
+  color: #e5bb63;
+  font-size: clamp(1.7rem, 2vw, 2.6rem);
+  line-height: 1.2;
+  margin-bottom: 14px;
+  font-family: 'Playfair Display', serif;
+}
+
+.nature-description {
+  color: rgba(255,255,255,0.8);
+  line-height: 1.7;
+  max-width: 340px;
+}
+
+.nature-right {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.feature-card {
+  padding: 24px 18px;
+  border-left: 1px solid rgba(198,154,69,0.25);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.feature-icon {
+  color: #c69a45;
+  margin-bottom: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.3s ease, transform 0.3s ease;
+  width: 100%;
 }
 
-.nature-icon-item:hover .nature-icon {
-  color: #9a7e2e;
-  transform: translateY(-2px);
+.feature-card:hover .feature-icon {
+  color: #e5bb63;
 }
 
-.nature-icon-title {
-  font-family: var(--font-heading);
-  font-size: 0.72rem;
-  font-weight: 700;
+.feature-title {
+  color: white;
+  font-size: 0.76rem;
+  line-height: 1.5;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #f8f5ef;
-  line-height: 1.4;
-  max-width: 150px;
+  margin-bottom: 12px;
+  font-weight: 700;
 }
 
-/* ─── Responsive ───────────────────────────────────────────────────── */
+.feature-text {
+  color: rgba(255,255,255,0.75);
+  line-height: 1.7;
+  font-size: 0.82rem;
+}
+
+/* ==========================================================================
+   Responsive Framework Modifications
+   ========================================================================== */
+@media (max-width: 1400px) {
+  .experience-grid {
+    grid-template-columns: repeat(4, 1fr);
+    row-gap: 32px;
+    margin-top: 140px;
+  }
+}
+
 @media (max-width: 1024px) {
-  .charter-banner {
+  .nature-box {
     grid-template-columns: 1fr;
   }
 
-  .charter-photo {
-    min-height: 320px;
-  }
-
-  .charter-content {
-    padding: 3rem 2.5rem;
-  }
-
-  .charter-icon {
-    margin-left: 0;
-  }
-
-  .nature-icons {
+  .nature-right {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
-@media (max-width: 640px) {
-  .charter-content {
-    padding: 2.5rem 1.5rem;
+@media (max-width: 768px) {
+  .experience-grid {
+    grid-template-columns: repeat(2, 1fr);
+    row-gap: 32px;
+    gap: 12px;
+    margin-top: 140px;
   }
 
-  .charter-title {
-    max-width: 100%;
+  .v-hover-floating-card {
+    width: 200px;
   }
 
-  .charter-text {
-    max-width: 100%;
+  .v-floating-image-wrap {
+    height: 100px;
   }
 
-  .charter-watermark {
+  .v-hover-title {
+    font-size: 0.75rem;
+  }
+
+  .v-hover-text {
+    font-size: 0.68rem;
+  }
+
+  .nature-right {
+    grid-template-columns: 1fr;
+  }
+
+  .feature-card {
+    border-left: none;
+    border-top: 1px solid rgba(198,154,69,0.2);
+  }
+
+  .nature-left {
+    min-height: 280px;
+  }
+}
+
+@media (max-width: 480px) {
+  .v-hover-floating-card {
+    display: none !important;
+  }
+
+  /* ── Carousel layout: native scroll-snap = finger swipe for free ── */
+  .experience-grid {
+    display: flex;
+    overflow-x: auto;
+    overflow-y: visible;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    margin-top: 20px;
+    margin-bottom: 0;
+    row-gap: 0;
+    gap: 12px;
+    padding-bottom: 4px;
+  }
+
+  .experience-grid::-webkit-scrollbar {
     display: none;
   }
 
-  .nature-strip {
-    padding: 3rem 1.25rem 3.5rem;
+  .experience-card {
+    flex: 0 0 82%;
+    scroll-snap-align: center;
   }
 
-  .nature-strip-title {
-    font-size: 1.15rem;
-    margin-bottom: 2.25rem;
-    line-height: 1.4;
+  /* avoid sticky hover/translate state on touch */
+  .experience-card:hover {
+    transform: none;
   }
 
-  .nature-icons {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 2rem 1rem;
+  /* ── Carousel controls: arrows + dots ── */
+  .carousel-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 16px;
+    margin-bottom: 8px;
   }
 
-  .nature-icon-title {
+  .carousel-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(198, 154, 69, 0.4);
+    background: rgba(4, 26, 43, 0.6);
+    color: #c69a45;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 0;
+  }
+
+  .carousel-arrow:active {
+    transform: scale(0.92);
+  }
+
+  .carousel-arrow:hover {
+    background: rgba(198, 154, 69, 0.15);
+    border-color: #c69a45;
+  }
+
+  .carousel-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: none;
+    padding: 0;
+    background: rgba(198, 154, 69, 0.3);
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.3s ease;
+  }
+
+  .dot.active {
+    background: #c69a45;
+    transform: scale(1.25);
+  }
+
+  .main-title {
+    font-size: 1.2rem;
+  }
+
+  .main-description {
+    font-size: 0.85rem;
+  }
+
+  .experience-title {
     font-size: 0.65rem;
   }
-}
-@media (max-width: 640px) {
-  .nature-icons {
-    grid-template-columns: repeat(6, 1fr);
-    gap: 2rem 1rem;
-  }
 
-  .nature-icon-item {
-    grid-column: span 2;
-    justify-self: center;
-  }
-
-  .nature-icon-item:nth-child(4) {
-    grid-column: 2 / span 2;
-  }
-
-  .nature-icon-item:nth-child(5) {
-    grid-column: 4 / span 2;
+  .nature-title {
+    font-size: 1.5rem;
   }
 }
 </style>

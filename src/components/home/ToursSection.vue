@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, nextTick, watch, ref } from 'vue'
+import { computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useComponentCMS } from '@/composables/useComponentCMS'
 import NoImagePlaceholder from '@/components/NoImagePlaceholder.vue'
@@ -75,46 +75,6 @@ const expeditions = computed(() => {
   })
 })
 
-// ── Carousel state ──────────────────────────────────────────────
-const currentIndex = ref(0)
-const isMobile = ref(false)
-const trackRef = ref<HTMLElement | null>(null)
-
-// Touch state
-let touchStartX = 0
-let touchStartY = 0
-let isDragging = false
-
-function checkMobile() {
-  isMobile.value = window.innerWidth <= 768
-}
-
-function goTo(index: number) {
-  const total = expeditions.value.length
-  currentIndex.value = (index + total) % total
-}
-
-function prev() { goTo(currentIndex.value - 1) }
-function next() { goTo(currentIndex.value + 1) }
-
-function onTouchStart(e: TouchEvent) {
-  touchStartX = e.touches[0].clientX
-  touchStartY = e.touches[0].clientY
-  isDragging = true
-}
-
-function onTouchEnd(e: TouchEvent) {
-  if (!isDragging) return
-  isDragging = false
-  const dx = e.changedTouches[0].clientX - touchStartX
-  const dy = e.changedTouches[0].clientY - touchStartY
-  // Only trigger if horizontal swipe is dominant
-  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
-    dx < 0 ? next() : prev()
-  }
-}
-
-// ── Intersection observer (desktop reveal) ──────────────────────
 let observer: IntersectionObserver | null = null
 
 function setupObserver() {
@@ -130,6 +90,7 @@ function setupObserver() {
       { threshold: 0.06 }
     )
   }
+
   document.querySelectorAll('.tour-card.reveal:not(.show)').forEach((el) =>
     observer?.observe(el)
   )
@@ -137,8 +98,6 @@ function setupObserver() {
 
 onMounted(async () => {
   await nextTick()
-  checkMobile()
-  window.addEventListener('resize', checkMobile)
   setupObserver()
   cms.load()
 })
@@ -153,165 +112,12 @@ watch(
 
 onUnmounted(() => {
   observer?.disconnect()
-  window.removeEventListener('resize', checkMobile)
 })
 </script>
 
 <template>
   <section class="tours-section">
-
-    <!-- ── MOBILE CAROUSEL ── -->
-    <div v-if="isMobile" class="carousel-wrapper">
-      <div
-        class="carousel-track"
-        ref="trackRef"
-        :style="{ transform: `translateX(-${currentIndex * 100}%)` }"
-        @touchstart.passive="onTouchStart"
-        @touchend.passive="onTouchEnd"
-      >
-        <div
-          v-for="item in expeditions"
-          :key="item.key"
-          class="carousel-slide"
-        >
-          <div class="tour-card show">
-            <div class="card-image-panel">
-              <template v-if="item.hasImage">
-                <img :src="item.image" :alt="item.title" />
-              </template>
-              <NoImagePlaceholder v-else :label="item.title" />
-              <div class="image-overlay"></div>
-            </div>
-
-            <div class="card-content-panel">
-              <div class="product-icon">
-                <svg v-if="item.key === 'ocean-safari'" width="48" height="48" viewBox="0 0 100 100" fill="none">
-                  <ellipse cx="50" cy="52" rx="18" ry="12" stroke="#C9A84C" stroke-width="1.5" />
-                  <ellipse cx="50" cy="50" rx="10" ry="8" fill="none" stroke="#C9A84C" stroke-width="1.2" />
-                  <path d="M32 52 Q22 44 26 36 Q34 42 32 52Z" stroke="#C9A84C" stroke-width="1.2" fill="none" />
-                  <path d="M68 52 Q78 44 74 36 Q66 42 68 52Z" stroke="#C9A84C" stroke-width="1.2" fill="none" />
-                  <path d="M34 60 Q26 70 30 76 Q38 68 34 60Z" stroke="#C9A84C" stroke-width="1.2" fill="none" />
-                  <path d="M66 60 Q74 70 70 76 Q62 68 66 60Z" stroke="#C9A84C" stroke-width="1.2" fill="none" />
-                  <ellipse cx="50" cy="34" rx="8" ry="6" stroke="#C9A84C" stroke-width="1.5" />
-                  <circle cx="47" cy="32" r="1.5" fill="#C9A84C" />
-                </svg>
-                <svg v-else width="48" height="48" viewBox="0 0 100 100" fill="none">
-                  <path d="M50 50 C30 30 10 45 15 60 C20 72 40 65 50 60 C60 65 80 72 85 60 C90 45 70 30 50 50Z" stroke="#C9A84C" stroke-width="1.5" fill="none" />
-                  <path d="M50 60 L50 82 Q53 78 50 72 Q47 78 50 82" stroke="#C9A84C" stroke-width="1.2" fill="none" />
-                  <circle cx="44" cy="55" r="2" fill="#C9A84C" opacity="0.7" />
-                </svg>
-              </div>
-
-              <h3 class="product-title">{{ item.title }}</h3>
-              <p class="product-vessel">{{ item.vessel }}</p>
-
-              <div class="product-divider">
-                <div class="divider-line-short"></div>
-              </div>
-
-              <p class="product-duration">{{ item.nights }} | {{ item.days }}</p>
-              <p class="product-description">{{ item.description }}</p>
-
-              <div class="feature-icons">
-                <div v-for="feat in item.features" :key="feat.label" class="feat-item">
-                  <svg v-if="feat.icon === 'sail'" width="28" height="28" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 3v13M12 3C12 3 5 9 5 16h7" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
-                    <path d="M3 19h18" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
-                  </svg>
-                  <svg v-else-if="feat.icon === 'snorkel'" width="28" height="28" viewBox="0 0 24 24" fill="none">
-                    <circle cx="12" cy="9" r="4" stroke="#C9A84C" stroke-width="1.4" />
-                    <path d="M8 13c0 4 8 4 8 0" stroke="#C9A84C" stroke-width="1.4" />
-                    <path d="M7 7c-2-2-4 0-3 3" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
-                  </svg>
-                  <svg v-else-if="feat.icon === 'wildlife'" width="28" height="28" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 14c-3 0-6 2-6 4v1h12v-1c0-2-3-4-6-4z" stroke="#C9A84C" stroke-width="1.4" />
-                    <circle cx="12" cy="9" r="4" stroke="#C9A84C" stroke-width="1.4" />
-                    <path d="M3 8c1-3 4-3 5-1M16 7c1-2 4-2 5 1" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
-                  </svg>
-                  <svg v-else-if="feat.icon === 'beach'" width="28" height="28" viewBox="0 0 24 24" fill="none">
-                    <path d="M4 20h16M12 20V8M12 8c0 0-3-5 0-7 3 2 0 7 0 7z" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
-                    <path d="M12 10c0 0 5 2 7 0" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
-                    <path d="M12 13c0 0-5 2-7 0" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
-                  </svg>
-                  <svg v-else-if="feat.icon === 'sunset'" width="28" height="28" viewBox="0 0 24 24" fill="none">
-                    <path d="M3 17h18M8 17A4 4 0 0 1 16 17" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
-                    <path d="M12 9V6M5.5 11.5L7 10M18.5 11.5L17 10" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
-                  </svg>
-                  <svg v-else-if="feat.icon === 'dive'" width="28" height="28" viewBox="0 0 24 24" fill="none">
-                    <path d="M9 4h6v4H9z" stroke="#C9A84C" stroke-width="1.3" />
-                    <rect x="8" y="8" width="8" height="10" rx="1" stroke="#C9A84C" stroke-width="1.4" />
-                    <path d="M7 10H5a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h2M17 10h2a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-2" stroke="#C9A84C" stroke-width="1.3" />
-                  </svg>
-                  <svg v-else-if="feat.icon === 'whale'" width="28" height="28" viewBox="0 0 24 24" fill="none">
-                    <path d="M4 14c0-4 3-7 8-7s8 3 8 6v2c0 1-1 2-2 2H6c-1 0-2-1-2-2v-1z" stroke="#C9A84C" stroke-width="1.4" />
-                    <path d="M18 15c2-1 4-1 4 1l-2 3" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
-                    <circle cx="9" cy="12" r="1" fill="#C9A84C" />
-                    <path d="M12 7 Q14 3 18 5" stroke="#C9A84C" stroke-width="1.2" stroke-linecap="round" fill="none" />
-                  </svg>
-                  <svg v-else-if="feat.icon === 'manta'" width="28" height="28" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 12 C8 8 3 10 4 14 C5 17 9 16 12 14 C15 16 19 17 20 14 C21 10 16 8 12 12Z" stroke="#C9A84C" stroke-width="1.4" fill="none" />
-                    <path d="M12 14 L12 19" stroke="#C9A84C" stroke-width="1.2" stroke-linecap="round" />
-                  </svg>
-                  <svg v-else-if="feat.icon === 'coral'" width="28" height="28" viewBox="0 0 24 24" fill="none">
-                    <path d="M12 20V12M12 12 Q9 8 9 4M12 12 Q15 8 15 4M12 12 Q7 10 5 12M12 12 Q17 10 19 12" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
-                  </svg>
-                  <svg v-else-if="feat.icon === 'camera'" width="28" height="28" viewBox="0 0 24 24" fill="none">
-                    <rect x="3" y="8" width="18" height="12" rx="2" stroke="#C9A84C" stroke-width="1.4" />
-                    <circle cx="12" cy="14" r="3" stroke="#C9A84C" stroke-width="1.4" />
-                    <path d="M8.5 8L10 5.5h4L15.5 8" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                  <span class="feat-label">{{ feat.label }}</span>
-                </div>
-              </div>
-
-              <div class="card-actions">
-                <button class="btn-primary-gold" @click="router.push(item.link)">
-                  {{ item.viewLabel }}
-                </button>
-                <button class="btn-outline-white" @click="router.push('/dates')">
-                  SEE DATES
-                </button>
-              </div>
-            </div>
-
-            <div class="escape-strip">
-              <span class="escape-prefix">{{ item.escape.text }}</span>
-              <span class="escape-title">{{ item.escape.title }}</span>
-              <span class="escape-sep">—</span>
-              <span class="escape-duration">{{ item.escape.nights }} | {{ item.escape.days }}</span>
-              <button class="btn-escape" @click="router.push(item.escape.link)">VIEW ESCAPE</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Prev / Next arrows -->
-      <button class="carousel-arrow carousel-arrow--prev" @click="prev" aria-label="Previous">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path d="M15 18l-6-6 6-6" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <button class="carousel-arrow carousel-arrow--next" @click="next" aria-label="Next">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-          <path d="M9 18l6-6-6-6" stroke="#C9A84C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-
-      <!-- Dot indicators -->
-      <div class="carousel-dots">
-        <button
-          v-for="(_, i) in expeditions"
-          :key="i"
-          class="carousel-dot"
-          :class="{ active: i === currentIndex }"
-          @click="goTo(i)"
-          :aria-label="`Go to slide ${i + 1}`"
-        />
-      </div>
-    </div>
-
-    <!-- ── DESKTOP GRID ── -->
-    <div v-else class="tours-grid">
+    <div class="tours-grid">
       <div
         v-for="(item, index) in expeditions"
         :key="item.key"
@@ -328,7 +134,13 @@ onUnmounted(() => {
 
         <div class="card-content-panel">
           <div class="product-icon">
-            <svg v-if="item.key === 'ocean-safari'" width="48" height="48" viewBox="0 0 100 100" fill="none">
+            <svg
+              v-if="item.key === 'ocean-safari'"
+              width="48"
+              height="48"
+              viewBox="0 0 100 100"
+              fill="none"
+            >
               <ellipse cx="50" cy="52" rx="18" ry="12" stroke="#C9A84C" stroke-width="1.5" />
               <ellipse cx="50" cy="50" rx="10" ry="8" fill="none" stroke="#C9A84C" stroke-width="1.2" />
               <path d="M32 52 Q22 44 26 36 Q34 42 32 52Z" stroke="#C9A84C" stroke-width="1.2" fill="none" />
@@ -338,8 +150,14 @@ onUnmounted(() => {
               <ellipse cx="50" cy="34" rx="8" ry="6" stroke="#C9A84C" stroke-width="1.5" />
               <circle cx="47" cy="32" r="1.5" fill="#C9A84C" />
             </svg>
+
             <svg v-else width="48" height="48" viewBox="0 0 100 100" fill="none">
-              <path d="M50 50 C30 30 10 45 15 60 C20 72 40 65 50 60 C60 65 80 72 85 60 C90 45 70 30 50 50Z" stroke="#C9A84C" stroke-width="1.5" fill="none" />
+              <path
+                d="M50 50 C30 30 10 45 15 60 C20 72 40 65 50 60 C60 65 80 72 85 60 C90 45 70 30 50 50Z"
+                stroke="#C9A84C"
+                stroke-width="1.5"
+                fill="none"
+              />
               <path d="M50 60 L50 82 Q53 78 50 72 Q47 78 50 82" stroke="#C9A84C" stroke-width="1.2" fill="none" />
               <circle cx="44" cy="55" r="2" fill="#C9A84C" opacity="0.7" />
             </svg>
@@ -357,52 +175,136 @@ onUnmounted(() => {
 
           <div class="feature-icons">
             <div v-for="feat in item.features" :key="feat.label" class="feat-item">
-              <svg v-if="feat.icon === 'sail'" width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <svg
+                v-if="feat.icon === 'sail'"
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
                 <path d="M12 3v13M12 3C12 3 5 9 5 16h7" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
                 <path d="M3 19h18" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
               </svg>
-              <svg v-else-if="feat.icon === 'snorkel'" width="28" height="28" viewBox="0 0 24 24" fill="none">
+
+              <svg
+                v-else-if="feat.icon === 'snorkel'"
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
                 <circle cx="12" cy="9" r="4" stroke="#C9A84C" stroke-width="1.4" />
                 <path d="M8 13c0 4 8 4 8 0" stroke="#C9A84C" stroke-width="1.4" />
                 <path d="M7 7c-2-2-4 0-3 3" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
               </svg>
-              <svg v-else-if="feat.icon === 'wildlife'" width="28" height="28" viewBox="0 0 24 24" fill="none">
+
+              <svg
+                v-else-if="feat.icon === 'wildlife'"
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
                 <path d="M12 14c-3 0-6 2-6 4v1h12v-1c0-2-3-4-6-4z" stroke="#C9A84C" stroke-width="1.4" />
                 <circle cx="12" cy="9" r="4" stroke="#C9A84C" stroke-width="1.4" />
                 <path d="M3 8c1-3 4-3 5-1M16 7c1-2 4-2 5 1" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
               </svg>
-              <svg v-else-if="feat.icon === 'beach'" width="28" height="28" viewBox="0 0 24 24" fill="none">
+
+              <svg
+                v-else-if="feat.icon === 'beach'"
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
                 <path d="M4 20h16M12 20V8M12 8c0 0-3-5 0-7 3 2 0 7 0 7z" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
                 <path d="M12 10c0 0 5 2 7 0" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
                 <path d="M12 13c0 0-5 2-7 0" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
               </svg>
-              <svg v-else-if="feat.icon === 'sunset'" width="28" height="28" viewBox="0 0 24 24" fill="none">
+
+              <svg
+                v-else-if="feat.icon === 'sunset'"
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
                 <path d="M3 17h18M8 17A4 4 0 0 1 16 17" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
                 <path d="M12 9V6M5.5 11.5L7 10M18.5 11.5L17 10" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
               </svg>
-              <svg v-else-if="feat.icon === 'dive'" width="28" height="28" viewBox="0 0 24 24" fill="none">
+
+              <svg
+                v-else-if="feat.icon === 'dive'"
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
                 <path d="M9 4h6v4H9z" stroke="#C9A84C" stroke-width="1.3" />
                 <rect x="8" y="8" width="8" height="10" rx="1" stroke="#C9A84C" stroke-width="1.4" />
-                <path d="M7 10H5a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h2M17 10h2a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-2" stroke="#C9A84C" stroke-width="1.3" />
+                <path
+                  d="M7 10H5a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h2M17 10h2a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-2"
+                  stroke="#C9A84C"
+                  stroke-width="1.3"
+                />
               </svg>
-              <svg v-else-if="feat.icon === 'whale'" width="28" height="28" viewBox="0 0 24 24" fill="none">
+
+              <svg
+                v-else-if="feat.icon === 'whale'"
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
                 <path d="M4 14c0-4 3-7 8-7s8 3 8 6v2c0 1-1 2-2 2H6c-1 0-2-1-2-2v-1z" stroke="#C9A84C" stroke-width="1.4" />
                 <path d="M18 15c2-1 4-1 4 1l-2 3" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
                 <circle cx="9" cy="12" r="1" fill="#C9A84C" />
                 <path d="M12 7 Q14 3 18 5" stroke="#C9A84C" stroke-width="1.2" stroke-linecap="round" fill="none" />
               </svg>
-              <svg v-else-if="feat.icon === 'manta'" width="28" height="28" viewBox="0 0 24 24" fill="none">
-                <path d="M12 12 C8 8 3 10 4 14 C5 17 9 16 12 14 C15 16 19 17 20 14 C21 10 16 8 12 12Z" stroke="#C9A84C" stroke-width="1.4" fill="none" />
+
+              <svg
+                v-else-if="feat.icon === 'manta'"
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <path
+                  d="M12 12 C8 8 3 10 4 14 C5 17 9 16 12 14 C15 16 19 17 20 14 C21 10 16 8 12 12Z"
+                  stroke="#C9A84C"
+                  stroke-width="1.4"
+                  fill="none"
+                />
                 <path d="M12 14 L12 19" stroke="#C9A84C" stroke-width="1.2" stroke-linecap="round" />
               </svg>
-              <svg v-else-if="feat.icon === 'coral'" width="28" height="28" viewBox="0 0 24 24" fill="none">
-                <path d="M12 20V12M12 12 Q9 8 9 4M12 12 Q15 8 15 4M12 12 Q7 10 5 12M12 12 Q17 10 19 12" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
+
+              <svg
+                v-else-if="feat.icon === 'coral'"
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <path
+                  d="M12 20V12M12 12 Q9 8 9 4M12 12 Q15 8 15 4M12 12 Q7 10 5 12M12 12 Q17 10 19 12"
+                  stroke="#C9A84C"
+                  stroke-width="1.4"
+                  stroke-linecap="round"
+                />
               </svg>
-              <svg v-else-if="feat.icon === 'camera'" width="28" height="28" viewBox="0 0 24 24" fill="none">
+
+              <svg
+                v-else-if="feat.icon === 'camera'"
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
                 <rect x="3" y="8" width="18" height="12" rx="2" stroke="#C9A84C" stroke-width="1.4" />
                 <circle cx="12" cy="14" r="3" stroke="#C9A84C" stroke-width="1.4" />
                 <path d="M8.5 8L10 5.5h4L15.5 8" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
+
               <span class="feat-label">{{ feat.label }}</span>
             </div>
           </div>
@@ -428,12 +330,10 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
-
   </section>
 </template>
 
 <style scoped>
-/* ── Section ─────────────────────────────────────────────────── */
 .tours-section {
   width: 100%;
   background: transparent;
@@ -441,14 +341,12 @@ onUnmounted(() => {
   box-sizing: border-box;
 }
 
-/* ── Desktop grid ────────────────────────────────────────────── */
 .tours-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1.25rem;
 }
 
-/* ── Shared card ─────────────────────────────────────────────── */
 .tour-card {
   position: relative;
   display: grid;
@@ -473,7 +371,6 @@ onUnmounted(() => {
   border-color: #c9a84c;
 }
 
-/* ── Image panel ─────────────────────────────────────────────── */
 .card-image-panel {
   grid-row: 1;
   grid-column: 1;
@@ -499,7 +396,6 @@ onUnmounted(() => {
   background: linear-gradient(to right, transparent 60%, rgba(6, 22, 42, 0.5) 100%);
 }
 
-/* ── Content panel ───────────────────────────────────────────── */
 .card-content-panel {
   grid-row: 1;
   grid-column: 2;
@@ -597,7 +493,6 @@ onUnmounted(() => {
   margin-top: auto;
 }
 
-/* ── Buttons ─────────────────────────────────────────────────── */
 .btn-primary-gold {
   height: 40px;
   padding: 0 1.2rem;
@@ -639,7 +534,6 @@ onUnmounted(() => {
   background: rgba(248, 245, 239, 0.08);
 }
 
-/* ── Escape strip ────────────────────────────────────────────── */
 .escape-strip {
   grid-column: 1 / -1;
   grid-row: 2;
@@ -697,7 +591,6 @@ onUnmounted(() => {
   border-color: #c9a84c;
 }
 
-/* ── Desktop breakpoint (1100px) ─────────────────────────────── */
 @media (max-width: 1100px) {
   .tours-grid {
     grid-template-columns: 1fr;
@@ -708,135 +601,71 @@ onUnmounted(() => {
   }
 }
 
-/* ── Mobile carousel (≤768px) ────────────────────────────────── */
 @media (max-width: 768px) {
   .tours-section {
     padding: 2rem 0 2.5rem;
   }
+
+  .tour-card {
+    grid-template-columns: 1fr;
+    grid-template-rows: 220px 1fr auto;
+    min-height: unset;
+  }
+
+  .card-image-panel {
+    grid-row: 1;
+    grid-column: 1;
+    height: 220px;
+  }
+
+  .card-content-panel {
+    grid-row: 2;
+    grid-column: 1;
+    border-left: none;
+    border-top: 1px solid rgba(201, 168, 76, 0.15);
+  }
+
+  .escape-strip {
+    grid-row: 3;
+    grid-column: 1;
+  }
+
+  .product-description {
+    max-width: 100%;
+  }
 }
 
-/* Carousel wrapper */
-.carousel-wrapper {
-  position: relative;
-  width: 100%;
-  overflow: hidden;
-  padding-bottom: 3rem; /* room for dots */
-}
+@media (max-width: 480px) {
+  .card-content-panel {
+    padding: 1.25rem 1rem 1rem;
+  }
 
-.carousel-track {
-  display: flex;
-  transition: transform 0.42s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
-}
+  .feature-icons {
+    gap: 0.5rem;
+  }
 
-.carousel-slide {
-  flex: 0 0 100%;
-  width: 100%;
-  padding: 0 0.5rem;
-  box-sizing: border-box;
-}
+  .feat-item {
+    min-width: 38px;
+  }
 
-/* Mobile card layout override */
-.carousel-slide .tour-card {
-  grid-template-columns: 1fr;
-  grid-template-rows: 220px 1fr auto;
-  min-height: unset;
-}
+  .card-actions {
+    gap: 0.6rem;
+  }
 
-.carousel-slide .card-image-panel {
-  grid-row: 1;
-  grid-column: 1;
-  height: 220px;
-}
+  .btn-primary-gold,
+  .btn-outline-white {
+    width: 100%;
+    justify-content: center;
+  }
 
-.carousel-slide .card-content-panel {
-  grid-row: 2;
-  grid-column: 1;
-  border-left: none;
-  border-top: 1px solid rgba(201, 168, 76, 0.15);
-}
+  .escape-strip {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+  }
 
-.carousel-slide .escape-strip {
-  grid-row: 3;
-  grid-column: 1;
-}
-
-.carousel-slide .product-description {
-  max-width: 100%;
-}
-
-.carousel-slide .card-actions {
-  gap: 0.6rem;
-}
-
-.carousel-slide .btn-primary-gold,
-.carousel-slide .btn-outline-white {
-  width: 100%;
-  justify-content: center;
-}
-
-.carousel-slide .escape-strip {
-  flex-direction: column;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-/* Arrows */
-.carousel-arrow {
-  position: absolute;
-  top: calc(220px / 2); /* vertically centre on the image */
-  transform: translateY(-50%);
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: rgba(6, 22, 42, 0.85);
-  border: 1px solid rgba(201, 168, 76, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  z-index: 10;
-  transition: background 0.25s ease, border-color 0.25s ease;
-}
-
-.carousel-arrow:hover {
-  background: rgba(201, 168, 76, 0.15);
-  border-color: #c9a84c;
-}
-
-.carousel-arrow--prev {
-  left: 0.75rem;
-}
-
-.carousel-arrow--next {
-  right: 0.75rem;
-}
-
-/* Dots */
-.carousel-dots {
-  position: absolute;
-  bottom: 0.75rem;
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.carousel-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  border: 1px solid rgba(201, 168, 76, 0.6);
-  background: transparent;
-  cursor: pointer;
-  padding: 0;
-  transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
-}
-
-.carousel-dot.active {
-  background: #c9a84c;
-  border-color: #c9a84c;
-  transform: scale(1.25);
+  .btn-escape {
+    align-self: center;
+  }
 }
 </style>

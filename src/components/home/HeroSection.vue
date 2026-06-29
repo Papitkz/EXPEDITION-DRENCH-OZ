@@ -19,10 +19,10 @@ const videos = computed(() =>
 
 const limitedBannerImage = computed(() => specialtyCms.getSlot('specialtyCards', 1)?.imageUrl || '')
 
+// Toggle state
 const showTours = ref(true)
-const heroRef = ref<HTMLElement | null>(null)
-const isHeroVisible = ref(true)
 
+// Book a Call state
 const isCalendlyLoaded = ref(false)
 const isCalendlyOpen = ref(false)
 const isPulsing = ref(true)
@@ -36,7 +36,6 @@ const loadCalendly = () => {
     isCalendlyLoaded.value = true
     return
   }
-
   const link = document.createElement('link')
   link.rel = 'stylesheet'
   link.href = 'https://assets.calendly.com/assets/external/widget.css'
@@ -52,18 +51,12 @@ const loadCalendly = () => {
   document.head.appendChild(script)
 }
 
-const launchPopup = () => {
-  ;(window as any).Calendly?.initPopupWidget({
-    url: 'https://calendly.com/expeditiondrenched/talk-to-an-adventure-partner',
-  })
-}
-
 const openCalendly = () => {
   stopPulse()
   isCalendlyOpen.value = true
   if (!isCalendlyLoaded.value) {
     loadCalendly()
-    const interval = window.setInterval(() => {
+    const interval = setInterval(() => {
       if ((window as any).Calendly) {
         clearInterval(interval)
         launchPopup()
@@ -72,6 +65,12 @@ const openCalendly = () => {
   } else {
     launchPopup()
   }
+}
+
+const launchPopup = () => {
+  ;(window as any).Calendly?.initPopupWidget({
+    url: 'https://calendly.com/expeditiondrenched/talk-to-an-adventure-partner',
+  })
 }
 
 const handleCalendlyClose = (e: MessageEvent) => {
@@ -94,7 +93,6 @@ const showControls = ref(false)
 const controlsTimeout = ref<number | null>(null)
 
 let resizeObserver: ResizeObserver | null = null
-let nextSectionObserver: IntersectionObserver | null = null
 let playAttemptInterval: number | null = null
 let transitionTimeout: number | null = null
 
@@ -103,19 +101,8 @@ onMounted(async () => {
   await specialtyCms.load()
   checkMobile()
 
-  resizeObserver = new ResizeObserver(() => checkMobile())
+  resizeObserver = new ResizeObserver(() => { checkMobile() })
   resizeObserver.observe(document.body)
-
-  const nextSection = heroRef.value?.nextElementSibling as HTMLElement | null
-  if (nextSection) {
-    nextSectionObserver = new IntersectionObserver(
-      ([entry]) => {
-        isHeroVisible.value = !entry.isIntersecting
-      },
-      { threshold: 0 }
-    )
-    nextSectionObserver.observe(nextSection)
-  }
 
   if (videoRef.value && videos.value[0]?.hasVideo) {
     videoRef.value.src = videos.value[0].videoUrl
@@ -136,26 +123,21 @@ onMounted(async () => {
     }
   }, 3000)
 
+  // Load Calendly
   loadCalendly()
   window.addEventListener('message', handleCalendlyClose)
-  window.setTimeout(() => {
-    isPulsing.value = false
-  }, 6000)
+  setTimeout(() => { isPulsing.value = false }, 6000)
 })
 
 onUnmounted(() => {
   if (transitionTimeout) clearTimeout(transitionTimeout)
-  if (controlsTimeout.value) clearTimeout(controlsTimeout.value)
+  if (controlsTimeout) clearTimeout(controlsTimeout)
   if (resizeObserver) resizeObserver.disconnect()
-  if (nextSectionObserver) nextSectionObserver.disconnect()
   if (playAttemptInterval) clearInterval(playAttemptInterval)
   window.removeEventListener('message', handleCalendlyClose)
-  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 
-const checkMobile = () => {
-  isMobile.value = window.innerWidth < 768
-}
+const checkMobile = () => { isMobile.value = window.innerWidth < 768 }
 
 const currentVideoUrl = computed(() => videos.value[currentVideoIndex.value]?.videoUrl || '')
 const nextVideoIndex = computed(() => (currentVideoIndex.value + 1) % videos.value.length)
@@ -177,7 +159,7 @@ const forcePlay = async () => {
     isPlaying.value = true
     videoError.value = false
     isBuffering.value = false
-  } catch {
+  } catch (err) {
     isPlaying.value = false
   }
 }
@@ -199,22 +181,19 @@ const switchVideo = (newIndex: number) => {
 
       if (isMobile.value && !isPlaying.value) {
         videoRef.value!.pause()
+        isTransitioning.value = false
+        isBuffering.value = false
       } else {
         forcePlay()
+        isTransitioning.value = false
+        isBuffering.value = false
       }
 
-      isTransitioning.value = false
-      isBuffering.value = false
-
-      if (videos.value[nextVideoIndex.value]?.hasVideo) {
-        preloadVideo(videos.value[nextVideoIndex.value].videoUrl)
-      }
+      if (videos.value[nextVideoIndex.value]?.hasVideo) preloadVideo(videos.value[nextVideoIndex.value].videoUrl)
     }
 
     videoRef.value!.addEventListener('canplaythrough', onCanPlay)
-    window.setTimeout(() => {
-      if (isTransitioning.value) onCanPlay()
-    }, 3000)
+    setTimeout(() => { if (isTransitioning.value) onCanPlay() }, 3000)
   }, 300)
 }
 
@@ -232,8 +211,8 @@ const togglePlayPause = () => {
 const handleVideoClick = () => {
   togglePlayPause()
   showControls.value = true
-  if (controlsTimeout.value) clearTimeout(controlsTimeout.value)
-  controlsTimeout.value = window.setTimeout(() => {
+  if (controlsTimeout) clearTimeout(controlsTimeout)
+  controlsTimeout = window.setTimeout(() => {
     showControls.value = false
   }, 2000)
 }
@@ -247,35 +226,23 @@ const handleVideoEnded = () => {
   }
 }
 
-const onTouchStart = (e: TouchEvent) => {
-  touchStartX.value = e.changedTouches[0].screenX
-}
-
+const onTouchStart = (e: TouchEvent) => { touchStartX.value = e.changedTouches[0].screenX }
 const onTouchEnd = (e: TouchEvent) => {
   touchEndX.value = e.changedTouches[0].screenX
   const diff = touchStartX.value - touchEndX.value
-  if (Math.abs(diff) > 50 && diff > 0) nextVideo()
+  if (Math.abs(diff) > 50) {
+    if (diff > 0) nextVideo()
+  }
 }
 
-const onVideoLoaded = () => {
-  videoLoaded.value = true
-  if (videoRef.value) videoRef.value.style.opacity = '1'
-}
-
-const onVideoError = () => {
-  videoError.value = true
-  window.setTimeout(() => {
-    if (videoError.value && hasMultipleVideos.value) nextVideo()
-  }, 2000)
-}
-
-const handleVisibilityChange = () => {
-  if (!document.hidden && isPlaying.value && !isMobile.value) forcePlay()
-}
+const onVideoLoaded = () => { videoLoaded.value = true; if (videoRef.value) videoRef.value.style.opacity = '1' }
+const onVideoError = () => { videoError.value = true; setTimeout(() => { if (videoError.value && hasMultipleVideos.value) nextVideo() }, 2000) }
+const handleVisibilityChange = () => { if (!document.hidden && isPlaying.value && !isMobile.value) forcePlay() }
 </script>
 
 <template>
-  <section class="hero-section" ref="heroRef">
+  <section class="hero-section">
+    <!-- Video Background -->
     <div class="hero-bg" @click="handleVideoClick" @touchstart="onTouchStart" @touchend="onTouchEnd">
       <div class="video-container">
         <video
@@ -285,8 +252,7 @@ const handleVisibilityChange = () => {
           loop
           playsinline
           preload="auto"
-          class="video-hero"
-          :class="{ 'is-buffering': isBuffering }"
+          :class="['video-hero', { 'video-fade-in': videoLoaded, 'is-buffering': isBuffering }]"
           @loadeddata="onVideoLoaded"
           @ended="handleVideoEnded"
           @error="onVideoError"
@@ -302,10 +268,10 @@ const handleVisibilityChange = () => {
           <div class="buffering-spinner"></div>
         </div>
       </div>
-
       <div class="overlay-dark"></div>
       <div class="overlay-gradient"></div>
 
+      <!-- Play/Pause overlay on click -->
       <div class="video-click-overlay" :class="{ 'show-controls': showControls }">
         <button class="video-control-btn" :aria-label="isPlaying ? 'Pause' : 'Play'">
           <svg v-if="!isPlaying" width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
@@ -314,7 +280,9 @@ const handleVisibilityChange = () => {
       </div>
     </div>
 
+    <!-- Hero Content -->
     <div class="hero-content">
+      <!-- Headline always visible -->
       <div class="headline-block">
         <h1 class="headline-main">
           <span class="block">WAKE UP ON THE</span>
@@ -338,12 +306,14 @@ const handleVisibilityChange = () => {
         </p>
       </div>
 
+      <!-- Tours Section with transition -->
       <Transition name="tours-slide">
         <div v-if="showTours" class="tours-wrapper">
           <ToursSection />
         </div>
       </Transition>
 
+      <!-- Limited Banner with transition -->
       <Transition name="tours-slide">
         <div v-if="showTours" class="limited-banner">
           <div class="banner-text">
@@ -381,61 +351,64 @@ const handleVisibilityChange = () => {
       </Transition>
     </div>
 
-    <Transition name="bar-fade">
-      <div v-show="isHeroVisible" class="bottom-right-bar">
-        <button
-          @click.stop="showTours = !showTours"
-          class="bar-btn bar-btn-text"
-          :aria-label="showTours ? 'Hide tours' : 'Show tours'"
+    <!-- Bottom-right floating controls bar -->
+    <div class="bottom-right-bar">
+      <!-- Hide/Show Tours button -->
+      <button 
+        @click.stop="showTours = !showTours" 
+        class="bar-btn bar-btn-text"
+        :aria-label="showTours ? 'Hide tours' : 'Show tours'"
+      >
+        <span class="bar-icon">
+          <svg v-if="showTours" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M18 15l-6-6-6 6"/>
+          </svg>
+          <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M6 9l6 6 6-6"/>
+          </svg>
+        </span>
+        <span class="bar-label">{{ showTours ? 'HIDE TOURS' : 'SHOW TOURS' }}</span>
+      </button>
+
+      <span class="bar-divider"></span>
+
+      <!-- Play/Pause -->
+      <button 
+        @click.stop="togglePlayPause" 
+        class="bar-btn"
+        :aria-label="isPlaying ? 'Pause' : 'Play'"
+      >
+        <svg v-if="!isPlaying" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+      </button>
+
+      <!-- Next (if multiple videos) -->
+      <button 
+        @click.stop="nextVideo" 
+        v-if="hasMultipleVideos"
+        class="bar-btn"
+        aria-label="Next video"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4v16l14-8z"/></svg>
+      </button>
+
+      <!-- Book a Call - ONLY shows when tours are hidden (video is visible) -->
+      <Transition name="bac-fade">
+        <button 
+          @click.stop="openCalendly"
+          class="bar-btn bar-btn-gold"
+          :class="{ 'bac-pulse': isPulsing }"
+          aria-label="Book a call with an adventure partner"
         >
           <span class="bar-icon">
-            <svg v-if="showTours" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M18 15l-6-6-6 6"/>
-            </svg>
-            <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-              <path d="M6 9l6 6 6-6"/>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6.29 6.29l.93-.93a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
             </svg>
           </span>
-          <span class="bar-label">{{ showTours ? 'HIDE TOURS' : 'SHOW TOURS' }}</span>
+          <span class="bar-label">Book a Call</span>
         </button>
-
-        <span class="bar-divider"></span>
-
-        <button
-          @click.stop="togglePlayPause"
-          class="bar-btn"
-          :aria-label="isPlaying ? 'Pause' : 'Play'"
-        >
-          <svg v-if="!isPlaying" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-          <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-        </button>
-
-        <button
-          @click.stop="nextVideo"
-          v-if="hasMultipleVideos"
-          class="bar-btn"
-          aria-label="Next video"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4v16l14-8z"/></svg>
-        </button>
-
-        <Transition name="bac-fade">
-          <button
-            @click.stop="openCalendly"
-            class="bar-btn bar-btn-gold"
-            :class="{ 'bac-pulse': isPulsing }"
-            aria-label="Book a call with an adventure partner"
-          >
-            <span class="bar-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6.29 6.29l.93-.93a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-              </svg>
-            </span>
-            <span class="bar-label">Book a Call</span>
-          </button>
-        </Transition>
-      </div>
-    </Transition>
+      </Transition>
+    </div>
   </section>
 </template>
 
@@ -453,18 +426,12 @@ const handleVisibilityChange = () => {
   inset: 0;
   z-index: 0;
   cursor: pointer;
-  transform: none !important;
-  animation: none !important;
-  scale: 1 !important;
 }
 
 .video-container {
   position: relative;
   width: 100%;
   height: 100%;
-  transform: none !important;
-  animation: none !important;
-  scale: 1 !important;
 }
 
 .video-hero {
@@ -473,15 +440,19 @@ const handleVisibilityChange = () => {
   object-fit: cover;
   display: block;
   transition: opacity 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  will-change: auto;
-  transform: none !important;
-  animation: none !important;
-  scale: 1 !important;
-  opacity: 1;
+  will-change: opacity, transform;
 }
 
-.video-hero.is-buffering {
-  opacity: 0.5;
+.video-fade-in {
+  opacity: 1;
+  animation: slowZoom 20s ease-out forwards;
+}
+
+.video-hero.is-buffering { opacity: 0.5; }
+
+@keyframes slowZoom {
+  0%   { transform: scale(1) translate3d(0,0,0); }
+  100% { transform: scale(1.10) translate3d(0, -3%, 0); }
 }
 
 .overlay-dark {
@@ -502,10 +473,9 @@ const handleVisibilityChange = () => {
     rgba(7,26,43,0.85) 100%
   );
   pointer-events: none;
-  transform: none !important;
-  animation: none !important;
 }
 
+/* Click overlay for play/pause feedback */
 .video-click-overlay {
   position: absolute;
   inset: 0;
@@ -563,10 +533,9 @@ const handleVisibilityChange = () => {
   animation: spin 1s linear infinite;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
+/* Tours slide transition */
 .tours-slide-enter-active,
 .tours-slide-leave-active {
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -583,6 +552,7 @@ const handleVisibilityChange = () => {
   padding: 0;
 }
 
+/* Bottom-right bar: HIDE TOURS + PLAY + NEXT + BOOK A CALL */
 .bottom-right-bar {
   position: fixed;
   bottom: 1.5rem;
@@ -597,17 +567,6 @@ const handleVisibilityChange = () => {
   border: 1px solid rgba(201, 168, 76, 0.35);
   border-radius: 100px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-}
-
-.bar-fade-enter-active,
-.bar-fade-leave-active {
-  transition: opacity 0.35s ease, transform 0.35s ease;
-}
-
-.bar-fade-enter-from,
-.bar-fade-leave-to {
-  opacity: 0;
-  transform: translateY(8px) scale(0.95);
 }
 
 .bar-btn {
@@ -660,6 +619,7 @@ const handleVisibilityChange = () => {
   margin: 0 0.2rem;
 }
 
+/* Book a Call gold button */
 .bar-btn-gold {
   width: auto;
   padding: 0 1rem 0 0.7rem;
@@ -687,6 +647,7 @@ const handleVisibilityChange = () => {
   font-weight: 700;
 }
 
+/* Book a Call pulse animation */
 @keyframes bac-pulse-ring {
   0%   { box-shadow: 0 0 0 0 rgba(201, 168, 76, 0.55), 0 2px 12px rgba(201, 168, 76, 0.4); }
   70%  { box-shadow: 0 0 0 10px rgba(201, 168, 76, 0), 0 2px 12px rgba(201, 168, 76, 0.4); }
@@ -697,6 +658,7 @@ const handleVisibilityChange = () => {
   animation: bac-pulse-ring 1.8s ease-out infinite;
 }
 
+/* Book a Call transition */
 .bac-fade-enter-active,
 .bac-fade-leave-active {
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -867,7 +829,7 @@ const handleVisibilityChange = () => {
   position: absolute;
   inset: 0;
   z-index: 1;
-  background: linear-gradient(90deg, rgba(5,20,38,0.35) 0%, rgba(5,20,38,0.1) 30%, rgba(5,20,38,0) 55%);
+  background: linear-gradient(90deg, rgba(5, 20, 38, 0.08) 0%, rgba(5, 20, 38, 0) 35%, rgba(5, 20, 38, 0.15) 100%);
   pointer-events: none;
 }
 
@@ -879,8 +841,15 @@ const handleVisibilityChange = () => {
   object-fit: cover;
   display: block;
   object-position: center center;
+}
+
+.banner-img {
   mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 18%, #000 45%);
   -webkit-mask-image: linear-gradient(to right, transparent 0%, rgba(0,0,0,0.5) 18%, #000 45%);
+}
+
+.banner-img-panel::before {
+  background: linear-gradient(90deg, rgba(5,20,38,0.35) 0%, rgba(5,20,38,0.1) 30%, rgba(5,20,38,0) 55%);
 }
 
 @media (max-width: 680px) {
@@ -934,11 +903,18 @@ const handleVisibilityChange = () => {
   }
 }
 
+@media (max-width: 767px) {
+  .video-fade-in {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
 @media (max-width: 380px) {
   .bar-label {
     display: none;
   }
-
+  
   .bar-btn-text,
   .bar-btn-gold {
     padding: 0;

@@ -131,7 +131,7 @@ function handleJoin() {
               </ul>
               <div class="contact-details">
                 <a href="mailto:info@expeditionoz.com.au" class="nav-link contact-item">info@expeditionoz.com.au</a>
-                <a href="tel:+61812345678" class="nav-link contact-item">+61 8 1234 5678</a>
+                <a href="tel:+61812345678" class="nav-link contact-item"></a>
               </div>
             </div>
           </div>
