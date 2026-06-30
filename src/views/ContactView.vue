@@ -44,7 +44,14 @@ useSEO({
   }
 })
 
-// ── CMS: hero media ────────────────────────────────────────────────────────
+// ── CMS: editable hero text (Admin → Content) ─────────────────────────────
+const heroTitle = ref('Check')
+const heroSubtitle = ref('Reach out to our team to discuss dates, pricing, and all the details for your perfect expedition.')
+onMounted(async () => {
+  const { getEditableContent } = await import('@/composables/usePageContent')
+  heroTitle.value = await getEditableContent('contact', 'hero', 'title', heroTitle.value)
+  heroSubtitle.value = await getEditableContent('contact', 'hero', 'subtitle', heroSubtitle.value)
+})
 const heroCms = useComponentCMS('ContactView')
 const heroImage = computed(() => heroCms.getImageUrl('hero', 0))
 const heroVideo = computed(() => heroCms.getImageUrl('hero', 1))
@@ -244,9 +251,9 @@ onMounted(async () => {
   <div>
     <PageHero
       tag="Bookings & Enquiries"
-      title="Check"
+      :title="heroTitle"
       title-italic="Availability"
-      subtitle="Reach out to our team to discuss dates, pricing, and all the details for your perfect expedition."
+      :subtitle="heroSubtitle"
       fallback-image=""
       fallback-alt="Expedition vessel on calm turquoise waters"
       height="55vh"

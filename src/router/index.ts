@@ -14,6 +14,7 @@ export const routes: RouteRecordRaw[] = [
   { path: '/limited-expeditions', name: 'limited-expeditions', component: () => import('@/views/LimitedExpeditionsView.vue') },
   { path: '/limited-expeditions/:slug', name: 'limited-expedition-detail', component: () => import('@/views/LimitedExpeditionDetailView.vue') },
   { path: '/about', name: 'about', component: () => import('@/views/AboutView.vue') },
+  { path: '/experience', name: 'experience', component: () => import('@/views/ExperienceView.vue') },
   { path: '/contact', name: 'contact', component: () => import('@/views/ContactView.vue') },
   { path: '/book', name: 'book', component: () => import('@/views/BookView.vue') },
   { path: '/book/:trip', name: 'book-trip', component: () => import('@/views/BookView.vue') },

@@ -198,6 +198,9 @@ const switchVideo = (newIndex: number) => {
 }
 
 const nextVideo = () => switchVideo(nextVideoIndex.value)
+const prevVideoIndex = computed(() => (currentVideoIndex.value - 1 + videos.value.length) % videos.value.length)
+const prevVideo = () => switchVideo(prevVideoIndex.value)
+const goToSlide = (i: number) => switchVideo(i)
 
 const togglePlayPause = () => {
   isPlaying.value = !isPlaying.value
@@ -232,6 +235,7 @@ const onTouchEnd = (e: TouchEvent) => {
   const diff = touchStartX.value - touchEndX.value
   if (Math.abs(diff) > 50) {
     if (diff > 0) nextVideo()
+    else prevVideo()
   }
 }
 
@@ -278,6 +282,30 @@ const handleVisibilityChange = () => { if (!document.hidden && isPlaying.value &
           <svg v-else width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
         </button>
       </div>
+
+      <!-- Carousel arrows (only when more than one slide) -->
+      <template v-if="hasMultipleVideos">
+        <button class="carousel-arrow carousel-arrow--prev" @click.stop="prevVideo" aria-label="Previous slide">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button class="carousel-arrow carousel-arrow--next" @click.stop="nextVideo" aria-label="Next slide">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+
+        <!-- Dot indicators -->
+        <div class="carousel-dots" role="tablist" aria-label="Hero slides">
+          <button
+            v-for="(v, i) in videos"
+            :key="i"
+            class="carousel-dot"
+            :class="{ 'carousel-dot--active': i === currentVideoIndex }"
+            :aria-label="`Go to slide ${i + 1}`"
+            :aria-selected="i === currentVideoIndex"
+            role="tab"
+            @click.stop="goToSlide(i)"
+          ></button>
+        </div>
+      </template>
     </div>
 
     <!-- Hero Content -->
@@ -535,6 +563,83 @@ const handleVisibilityChange = () => { if (!document.hidden && isPlaying.value &
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ─── Carousel controls ─── */
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(7, 26, 43, 0.45);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(201, 168, 76, 0.4);
+  color: #C9A84C;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+}
+
+.carousel-arrow:hover {
+  background: rgba(201, 168, 76, 0.25);
+  border-color: rgba(201, 168, 76, 0.8);
+}
+
+.carousel-arrow--prev { left: 1.25rem; }
+.carousel-arrow--next { right: 1.25rem; }
+
+.carousel-arrow--prev:hover { transform: translateY(-50%) translateX(-3px); }
+.carousel-arrow--next:hover { transform: translateY(-50%) translateX(3px); }
+
+.carousel-dots {
+  position: absolute;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(248, 245, 239, 0.35);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.3s ease, transform 0.3s ease, width 0.3s ease;
+}
+
+.carousel-dot--active {
+  background: #C9A84C;
+  width: 22px;
+  border-radius: 4px;
+}
+
+@media (max-width: 767px) {
+  .carousel-arrow {
+    width: 38px;
+    height: 38px;
+  }
+  .carousel-arrow--prev { left: 0.6rem; }
+  .carousel-arrow--next { right: 0.6rem; }
+  .carousel-dots {
+    top: calc(92px + 0.75rem); /* clear the mobile navbar */
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carousel-arrow,
+  .carousel-dot {
+    transition: none;
+  }
+}
+
 /* Tours slide transition */
 .tours-slide-enter-active,
 .tours-slide-leave-active {
@@ -596,6 +701,17 @@ const handleVisibilityChange = () => { if (!document.hidden && isPlaying.value &
   gap: 0.4rem;
   display: flex;
   align-items: center;
+  border: 1px solid transparent;
+  transition: all 0.25s ease;
+}
+
+.bar-btn-text:hover {
+  border-color: rgba(201, 168, 76, 0.4);
+  background: rgba(201, 168, 76, 0.1);
+}
+
+.bar-btn-text .bar-icon svg {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .bar-icon {
@@ -910,16 +1026,32 @@ const handleVisibilityChange = () => { if (!document.hidden && isPlaying.value &
   }
 }
 
-@media (max-width: 380px) {
-  .bar-label {
+@media (max-width: 767px) {
+  .bar-btn-gold {
+    width: 40px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .bar-btn-gold .bar-label {
     display: none;
   }
-  
-  .bar-btn-text,
-  .bar-btn-gold {
-    padding: 0;
-    width: 36px;
-    justify-content: center;
+}
+
+@media (max-width: 420px) {
+  .bottom-right-bar {
+    gap: 0.2rem;
+    padding: 0.3rem 0.4rem;
+  }
+
+  .bar-btn-text {
+    padding: 0 0.55rem 0 0.45rem;
+    gap: 0.3rem;
+  }
+
+  .bar-label {
+    font-size: 0.5rem;
+    letter-spacing: 0.1em;
   }
 }
 </style>

@@ -177,4 +177,20 @@ onUnmounted(() => {
   .bac-pulse { animation: none; }
   .bac-rise-enter-active { transition: none; }
 }
+
+@media (max-width: 767px) {
+  .bac-btn {
+    padding: 0.75rem;
+    width: 48px;
+    height: 48px;
+    justify-content: center;
+    border-radius: 50% !important;
+  }
+  .bac-icon svg {
+    margin: 0 !important;
+  }
+  .bac-label {
+    display: none;
+  }
+}
 </style>

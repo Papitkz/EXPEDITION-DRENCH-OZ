@@ -102,10 +102,10 @@ function isActive(path: string) {
           </transition>
         </div>
 
-        <router-link to="/about" class="nav-link" :class="{ 'nav-link--active': isActive('/about') }">
+        <router-link to="/experience" class="nav-link" :class="{ 'nav-link--active': isActive('/experience') }">
           THE EXPERIENCE
         </router-link>
-        <router-link to="/about-us" class="nav-link" :class="{ 'nav-link--active': route.path === '/about-us' }">
+        <router-link to="/about" class="nav-link" :class="{ 'nav-link--active': isActive('/about') }">
           ABOUT US
         </router-link>
         <router-link to="/blog" class="nav-link" :class="{ 'nav-link--active': isActive('/blog') }">
@@ -118,7 +118,7 @@ function isActive(path: string) {
 
       <div class="navbar-right">
         <router-link to="/book" class="enquire-btn">
-          ENQUIRE
+          CHECK AVAILABILITY
         </router-link>
 
         <button
@@ -171,8 +171,8 @@ function isActive(path: string) {
       <div class="mobile-divider"></div>
 
       <nav class="mobile-nav">
-        <router-link to="/about" class="mobile-nav-link" @click="navigate('/about')">The Experience</router-link>
-        <router-link to="/about-us" class="mobile-nav-link" @click="navigate('/about-us')">About Us</router-link>
+        <router-link to="/experience" class="mobile-nav-link" @click="navigate('/experience')">The Experience</router-link>
+        <router-link to="/about" class="mobile-nav-link" @click="navigate('/about')">About Us</router-link>
         <router-link to="/blog" class="mobile-nav-link" @click="navigate('/blog')">Journal</router-link>
         <router-link to="/contact" class="mobile-nav-link" @click="navigate('/contact')">Contact</router-link>
       </nav>

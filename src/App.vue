@@ -6,6 +6,7 @@ import { useTheme } from '@/composables/useTheme'
 import NavBar from '@/components/NavBar.vue'
 import FooterSection from '@/components/FooterSection.vue'
 import CompassLoader from '@/components/CompassLoader.vue'
+import GoldCompassCursor from '@/components/GoldCompassCursor.vue'
 
 useLenis()
 
@@ -225,6 +226,9 @@ const animateRipples = () => {
     <!-- Skip to main content (accessibility) -->
     <a href="#main-content" class="skip-link">Skip to main content</a>
 
+    <!-- Gold compass cursor (site-wide, desktop only) -->
+    <GoldCompassCursor v-if="!isAdminRoute" />
+
     <!-- Screen reader route announcer -->
     <div aria-live="polite" aria-atomic="true" class="sr-only">{{ routeAnnounce }}</div>
 
@@ -330,11 +334,7 @@ const animateRipples = () => {
 }
 
 @media (max-width: 768px) {
-  .main-content { margin-bottom: 440px; }
-}
-
-@media (max-width: 480px) {
-  .main-content { margin-bottom: 520px; }
+  .main-content { margin-bottom: 0; }
 }
 
 .fixed-footer {
@@ -343,6 +343,12 @@ const animateRipples = () => {
   left: 0;
   right: 0;
   z-index: 1;
+}
+
+@media (max-width: 768px) {
+  .fixed-footer {
+    position: static;
+  }
 }
 
 /* Scroll to top — sits bottom-right, above the clock bar */

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { computed, onMounted, onUnmounted, nextTick, watch, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useComponentCMS } from '@/composables/useComponentCMS'
 import NoImagePlaceholder from '@/components/NoImagePlaceholder.vue'
@@ -21,7 +21,7 @@ const EXPEDITION_FAMILIES = [
       { icon: 'snorkel', label: 'Snorkelling' },
       { icon: 'wildlife', label: 'Wildlife' },
       { icon: 'beach', label: 'Beaches' },
-      { icon: 'sunset', label: 'Sunset\nAnchorages' },
+      { icon: 'sunset', label: 'Private Chef' },
     ],
     link: '/expeditions/ocean-safari',
     viewLabel: 'VIEW EXPEDITION',
@@ -44,11 +44,11 @@ const EXPEDITION_FAMILIES = [
     days: '9 Days',
     description: 'Our flagship liveaboard dive and snorkel expedition.',
     features: [
+      { icon: 'sail', label: 'Sailing' },
       { icon: 'dive', label: 'Scuba Diving' },
-      { icon: 'whale', label: 'Whale Sharks' },
-      { icon: 'manta', label: 'Mantas' },
-      { icon: 'coral', label: 'Coral Reefs' },
-      { icon: 'camera', label: 'Underwater\nPhotography' },
+      { icon: 'whale', label: 'WhaleSharks' },
+      { icon: 'coral', label: 'Wild Life' },
+      { icon: 'camera', label: 'Private Chef' },
     ],
     link: '/expeditions/dive-expedition',
     viewLabel: 'VIEW EXPEDITION',
@@ -74,6 +74,30 @@ const expeditions = computed(() => {
     }
   })
 })
+
+const scrollerRef = ref<HTMLElement | null>(null)
+const activeIndex = ref(0)
+let scrollTicking = false
+
+function onCarouselScroll() {
+  if (scrollTicking) return
+  scrollTicking = true
+  requestAnimationFrame(() => {
+    const el = scrollerRef.value
+    if (el) {
+      const cardWidth = el.scrollWidth / expeditions.value.length
+      activeIndex.value = Math.round(el.scrollLeft / cardWidth)
+    }
+    scrollTicking = false
+  })
+}
+
+function scrollToCard(index: number) {
+  const el = scrollerRef.value
+  if (!el) return
+  const card = el.children[index] as HTMLElement | undefined
+  card?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
+}
 
 let observer: IntersectionObserver | null = null
 
@@ -117,7 +141,7 @@ onUnmounted(() => {
 
 <template>
   <section class="tours-section">
-    <div class="tours-grid">
+    <div class="tours-grid" ref="scrollerRef" @scroll="onCarouselScroll">
       <div
         v-for="(item, index) in expeditions"
         :key="item.key"
@@ -330,6 +354,16 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
+
+    <div class="tours-dots" aria-hidden="true">
+      <button
+        v-for="(item, index) in expeditions"
+        :key="item.key + '-dot'"
+        class="tours-dot"
+        :class="{ active: activeIndex === index }"
+        @click="scrollToCard(index)"
+      ></button>
+    </div>
   </section>
 </template>
 
@@ -358,7 +392,7 @@ onUnmounted(() => {
   background: #06162a;
   opacity: 0;
   transform: translateY(30px);
-  transition: opacity 0.55s ease, transform 0.55s ease, border-color 0.3s ease;
+  transition: opacity 0.55s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.3s ease, box-shadow 0.4s ease;
   min-height: 420px;
 }
 
@@ -369,6 +403,8 @@ onUnmounted(() => {
 
 .tour-card:hover {
   border-color: #c9a84c;
+  transform: translateY(-6px);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(201, 168, 76, 0.15);
 }
 
 .card-image-panel {
@@ -591,6 +627,37 @@ onUnmounted(() => {
   border-color: #c9a84c;
 }
 
+.tours-dots {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .tours-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .tours-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(201, 168, 76, 0.3);
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .tours-dot.active {
+    background: #c9a84c;
+    width: 22px;
+    border-radius: 4px;
+  }
+}
+
 @media (max-width: 1100px) {
   .tours-grid {
     grid-template-columns: 1fr;
@@ -606,10 +673,29 @@ onUnmounted(() => {
     padding: 2rem 0 2.5rem;
   }
 
+  .tours-grid {
+    display: flex;
+    grid-template-columns: unset;
+    gap: 1rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding: 0.25rem 1.25rem 1.25rem;
+    margin: 0 -1.25rem;
+    scrollbar-width: none;
+  }
+
+  .tours-grid::-webkit-scrollbar {
+    display: none;
+  }
+
   .tour-card {
     grid-template-columns: 1fr;
     grid-template-rows: 220px 1fr auto;
     min-height: unset;
+    flex: 0 0 88%;
+    scroll-snap-align: center;
+    scroll-snap-stop: always;
   }
 
   .card-image-panel {

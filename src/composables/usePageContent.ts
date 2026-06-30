@@ -114,6 +114,45 @@ export async function savePageContent(
   }
 }
 
+// ---- Public-facing cache & reader (for rendering CMS content on live pages) ----
+const publicContentCache = new Map<string, Map<string, string>>() // page -> (section:key -> value)
+const publicLoadPromises = new Map<string, Promise<void>>()
+
+async function ensurePageLoaded(page: string): Promise<void> {
+  if (publicContentCache.has(page)) return
+  if (publicLoadPromises.has(page)) return publicLoadPromises.get(page)
+
+  const promise = (async () => {
+    const items = await loadPageContent(page)
+    const map = new Map<string, string>()
+    for (const item of items) {
+      map.set(`${item.section}:${item.key}`, item.value)
+    }
+    publicContentCache.set(page, map)
+  })()
+
+  publicLoadPromises.set(page, promise)
+  return promise
+}
+
+// Public: get a single content value, falling back to `fallback` if not set in CMS
+export async function getEditableContent(page: string, section: string, key: string, fallback = ''): Promise<string> {
+  try {
+    await ensurePageLoaded(page)
+    const map = publicContentCache.get(page)
+    const value = map?.get(`${section}:${key}`)
+    return value !== undefined && value !== '' ? value : fallback
+  } catch {
+    return fallback
+  }
+}
+
+// Public: preload + return the whole map for a page (useful for components rendering many fields)
+export async function getPageContentMap(page: string): Promise<Map<string, string>> {
+  await ensurePageLoaded(page)
+  return publicContentCache.get(page) ?? new Map()
+}
+
 // Admin: Delete a content item
 export async function deletePageContent(id: string): Promise<void> {
   const { db, doc, deleteDoc } = await getFirebase()
@@ -360,6 +399,57 @@ export const PAGE_CONTENT_REGISTRY: Record<string, ContentDef[]> = {
       keys: [
         { key: 'title', label: 'Title', type: 'text' },
         { key: 'subtitle', label: 'Subtitle', type: 'text' },
+      ],
+    },
+  ],
+  experience: [
+    {
+      section: 'hero',
+      label: 'Hero Section',
+      keys: [
+        { key: 'overline', label: 'Overline', type: 'text' },
+        { key: 'title', label: 'Title', type: 'text' },
+        { key: 'subtitle', label: 'Subtitle', type: 'textarea' },
+      ],
+    },
+    {
+      section: 'intro',
+      label: 'Introduction',
+      keys: [
+        { key: 'title', label: 'Title', type: 'text' },
+        { key: 'description', label: 'Description', type: 'textarea' },
+      ],
+    },
+    {
+      section: 'pillar1',
+      label: 'Pillar 1',
+      keys: [
+        { key: 'title', label: 'Title', type: 'text' },
+        { key: 'description', label: 'Description', type: 'textarea' },
+      ],
+    },
+    {
+      section: 'pillar2',
+      label: 'Pillar 2',
+      keys: [
+        { key: 'title', label: 'Title', type: 'text' },
+        { key: 'description', label: 'Description', type: 'textarea' },
+      ],
+    },
+    {
+      section: 'pillar3',
+      label: 'Pillar 3',
+      keys: [
+        { key: 'title', label: 'Title', type: 'text' },
+        { key: 'description', label: 'Description', type: 'textarea' },
+      ],
+    },
+    {
+      section: 'cta',
+      label: 'CTA Section',
+      keys: [
+        { key: 'title', label: 'Title', type: 'text' },
+        { key: 'buttonText', label: 'Button Text', type: 'text' },
       ],
     },
   ],

@@ -26,10 +26,16 @@ const heroCms = useComponentCMS('BlogListView')
 const heroImage = computed(() => heroCms.getImageUrl('hero', 0))
 const heroVideo = computed(() => heroCms.getImageUrl('hero', 1))
 
+const heroTitle = ref('Expedition')
+const heroSubtitle = ref('Tales from the reef, marine conservation updates, and guides for your next adventure.')
+
 onMounted(async () => {
   blogs.value = await getBlogs()
   loading.value = false
   await heroCms.load()
+  const { getEditableContent } = await import('@/composables/usePageContent')
+  heroTitle.value = await getEditableContent('blog', 'hero', 'title', heroTitle.value)
+  heroSubtitle.value = await getEditableContent('blog', 'hero', 'subtitle', heroSubtitle.value)
 })
 
 const goToBlog = (slug: string) => {
@@ -41,9 +47,9 @@ const goToBlog = (slug: string) => {
   <div>
     <PageHero
       tag="Stories & Insights"
-      title="Expedition"
+      :title="heroTitle"
       title-italic="Journal"
-      subtitle="Tales from the reef, marine conservation updates, and guides for your next adventure."
+      :subtitle="heroSubtitle"
       fallback-image=""
       fallback-alt="Ningaloo Reef blog"
       height="50vh"
