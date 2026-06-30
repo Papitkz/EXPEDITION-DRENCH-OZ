@@ -1,8 +1,8 @@
 <template>
   <section class="experience-section" id="experience">
     <div v-if="hasTerrain" class="terrain-layer">
-      <div class="terrain-parallax-wrap">
-        <img ref="terrainImgRef" :src="terrainImage" alt="Ningaloo Reef" loading="lazy" class="terrain-parallax-img" />
+      <div class="terrain-img-wrap">
+        <img :src="terrainImage" alt="Ningaloo Reef" loading="lazy" class="terrain-img" />
       </div>
       <div class="terrain-overlay"></div>
     </div>
@@ -100,7 +100,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useComponentCMS } from '@/composables/useComponentCMS'
-import { useParallax } from '@/composables/useParallax'
 
 const cms = useComponentCMS('ExperienceSection')
 
@@ -109,10 +108,6 @@ const terrainImage = computed(() => {
   return cms.getSlot('experiences', 0)?.imageUrl || ''
 })
 const hasTerrain = computed(() => !!terrainImage.value)
-
-// Parallax
-const terrainImgRef = ref<HTMLElement | null>(null)
-useParallax(terrainImgRef, { speed: 0.22, clamp: 90 })
 
 const waypoints = ref([
   {
@@ -192,20 +187,24 @@ onMounted(async () => {
   z-index: 1;
 }
 
-.terrain-parallax-wrap {
+.terrain-img-wrap {
   position: absolute;
-  inset: -12%;
+  inset: 0;
   overflow: hidden;
 }
 
-.terrain-parallax-img {
+.terrain-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   object-position: center 40%;
   display: block;
-  will-change: transform;
-  transform: translate3d(0, 0, 0) scale(1.08);
+  animation: terrain-zoom 24s ease-in-out infinite alternate;
+}
+
+@keyframes terrain-zoom {
+  from { transform: scale(1); }
+  to { transform: scale(1.06); }
 }
 
 .terrain-overlay {
@@ -213,11 +212,11 @@ onMounted(async () => {
   inset: 0;
   background: linear-gradient(
     90deg,
-    rgba(7, 26, 43, 1) 0%,
-    rgba(7, 26, 43, 0.97) 20%,
-    rgba(7, 26, 43, 0.72) 42%,
-    rgba(7, 26, 43, 0.18) 68%,
-    rgba(7, 26, 43, 0.04) 100%
+    rgba(7, 26, 43, 0.96) 0%,
+    rgba(7, 26, 43, 0.88) 18%,
+    rgba(7, 26, 43, 0.55) 40%,
+    rgba(7, 26, 43, 0.18) 65%,
+    rgba(7, 26, 43, 0.08) 100%
   );
 }
 

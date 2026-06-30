@@ -291,7 +291,7 @@ html, body {
 
   /* Disable all parallax transforms gracefully */
   .page-hero__img,
-  .terrain-parallax-img,
+  .terrain-img,
   .charter-parallax-img,
   .video-fade-in {
     transform: none !important;

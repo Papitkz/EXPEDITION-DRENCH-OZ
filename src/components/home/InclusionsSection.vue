@@ -410,7 +410,7 @@ onUnmounted(() => {
   max-width: 100vw;
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
-  background: radial-gradient(circle at top, #06314f 0%, #041a2b 55%);
+  background: #041a2b;
   padding: 60px 20px 40px 20px;
   overflow: visible; 
 }

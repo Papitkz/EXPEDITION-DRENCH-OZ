@@ -74,6 +74,112 @@ function setupObserver() {
   document.querySelectorAll('.le-card.reveal:not(.show)').forEach((el) => observer?.observe(el))
 }
 
+// ─── Mobile carousel: finger swipe, arrows + autoplay ─────────────────────
+const carouselRef = ref<HTMLElement | null>(null)
+const currentIndex = ref(0)
+const isMobile = ref(false)
+
+const totalSlides = computed(() => cards.value.length)
+
+const CAROUSEL_GAP = 12       // must match the gap used in .le-grid @ 720px
+const AUTOPLAY_DELAY = 4500   // ms between auto-advances
+const RESUME_DELAY = 5500     // ms to wait before resuming autoplay after touch
+
+let autoplayTimer: ReturnType<typeof setInterval> | null = null
+let resumeTimer: ReturnType<typeof setTimeout> | null = null
+let scrollSettleTimer: ReturnType<typeof setTimeout> | null = null
+
+function checkIsMobile() {
+  isMobile.value = window.matchMedia('(max-width: 720px)').matches
+}
+
+function scrollToSlide(index: number, smooth = true) {
+  const track = carouselRef.value
+  const card = track?.children[index] as HTMLElement | undefined
+  if (!track || !card) return
+
+  track.scrollTo({
+    left: card.offsetLeft,
+    behavior: smooth ? 'smooth' : 'auto',
+  })
+  currentIndex.value = index
+}
+
+function nextSlide() {
+  if (!totalSlides.value) return
+  scrollToSlide((currentIndex.value + 1) % totalSlides.value)
+}
+
+function prevSlide() {
+  if (!totalSlides.value) return
+  scrollToSlide((currentIndex.value - 1 + totalSlides.value) % totalSlides.value)
+}
+
+function startAutoplay() {
+  stopAutoplay()
+  autoplayTimer = setInterval(() => {
+    if (isMobile.value) nextSlide()
+  }, AUTOPLAY_DELAY)
+}
+
+function stopAutoplay() {
+  if (autoplayTimer) {
+    clearInterval(autoplayTimer)
+    autoplayTimer = null
+  }
+}
+
+// Called on touchstart / arrow click: pause autoplay while the user is
+// interacting, then resume it after a short idle period
+function pauseAutoplay() {
+  stopAutoplay()
+  if (resumeTimer) clearTimeout(resumeTimer)
+  resumeTimer = setTimeout(() => {
+    if (isMobile.value) startAutoplay()
+  }, RESUME_DELAY)
+}
+
+function handlePrevClick() {
+  prevSlide()
+  pauseAutoplay()
+}
+
+function handleNextClick() {
+  nextSlide()
+  pauseAutoplay()
+}
+
+function handleDotClick(i: number) {
+  scrollToSlide(i)
+  pauseAutoplay()
+}
+
+// Keep currentIndex in sync while the user swipes by hand
+function onCarouselScroll() {
+  if (scrollSettleTimer) clearTimeout(scrollSettleTimer)
+  scrollSettleTimer = setTimeout(() => {
+    const track = carouselRef.value
+    if (!track) return
+
+    const cardWidth = (track.children[0] as HTMLElement | undefined)?.offsetWidth || 1
+    const index = Math.round(track.scrollLeft / (cardWidth + CAROUSEL_GAP))
+
+    currentIndex.value = Math.min(Math.max(index, 0), totalSlides.value - 1)
+  }, 100)
+}
+
+function handleResize() {
+  const wasMobile = isMobile.value
+  checkIsMobile()
+
+  if (isMobile.value && !wasMobile) {
+    startAutoplay()
+  } else if (!isMobile.value && wasMobile) {
+    stopAutoplay()
+    if (resumeTimer) clearTimeout(resumeTimer)
+  }
+}
+
 onMounted(async () => {
   loadingTrips.value = true
   trips.value = await fetchPublishedLimitedExpeditions()
@@ -82,9 +188,19 @@ onMounted(async () => {
   await nextTick()
   setupObserver()
   cms.load()
+
+  checkIsMobile()
+  window.addEventListener('resize', handleResize)
+  if (isMobile.value) startAutoplay()
 })
 
-onUnmounted(() => observer?.disconnect())
+onUnmounted(() => {
+  observer?.disconnect()
+  window.removeEventListener('resize', handleResize)
+  stopAutoplay()
+  if (resumeTimer) clearTimeout(resumeTimer)
+  if (scrollSettleTimer) clearTimeout(scrollSettleTimer)
+})
 </script>
 
 <template>
@@ -102,85 +218,128 @@ onUnmounted(() => observer?.disconnect())
     </section>
 
     <section class="le-grid-wrap">
-      <div class="le-grid">
-        <article
-          v-for="(card, i) in cards"
-          :key="card.key"
-          class="le-card reveal"
-          :style="{ transitionDelay: `${i * 0.07}s` }"
-          @click="goToExpedition(card.key)"
+      <div class="le-carousel-outer">
+        <button
+          v-if="isMobile"
+          class="le-arrow le-arrow--prev"
+          type="button"
+          aria-label="Previous expedition"
+          @click="handlePrevClick"
         >
-          <div class="le-card-img">
-            <div class="nights-badge">{{ card.nights }}</div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
 
-            <template v-if="card.hasImage">
-              <img :src="card.image" :alt="card.title" />
-            </template>
-            <NoImagePlaceholder v-else :label="card.title" />
-          </div>
+        <div
+          class="le-grid"
+          ref="carouselRef"
+          @scroll="onCarouselScroll"
+          @touchstart="pauseAutoplay"
+        >
+          <article
+            v-for="(card, i) in cards"
+            :key="card.key"
+            class="le-card reveal"
+            :style="{ transitionDelay: `${i * 0.07}s` }"
+            @click="goToExpedition(card.key)"
+          >
+            <div class="le-card-img">
+              <div class="nights-badge">{{ card.nights }}</div>
 
-          <div class="le-card-body">
-            <div class="title-row">
-              <div class="card-icon">
-                <svg v-if="card.icon === 'freedive'" viewBox="0 0 24 24" fill="none">
-                  <path d="M3 16c2-3 5-5 9-5s7 2 9 5" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round"/>
-                  <circle cx="17" cy="7" r="2" stroke="#c79a5c" stroke-width="1.4"/>
-                  <path d="M15 9L7 15" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round"/>
-                </svg>
-                <svg v-else-if="card.icon === 'surf'" viewBox="0 0 24 24" fill="none">
-                  <path d="M2 14c2.5 1.5 5 1.5 7.5 0s5-1.5 7.5 0" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round"/>
-                  <path d="M5 14c0-5 4-9 9-9-1.5 3-2 6-1 9" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round"/>
-                </svg>
-                <svg v-else-if="card.icon === 'whale'" viewBox="0 0 24 24" fill="none">
-                  <path d="M2 12c2-4 6-6 10-6s8 3 10 7c-2 1-4 1-6 0-2 3-5 4-8 3" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M18 18c1-2 2-4 1-6" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round"/>
-                </svg>
-                <svg v-else-if="card.icon === 'camera'" viewBox="0 0 24 24" fill="none">
-                  <rect x="3" y="8" width="18" height="12" rx="2" stroke="#c79a5c" stroke-width="1.4"/>
-                  <circle cx="12" cy="14" r="3" stroke="#c79a5c" stroke-width="1.4"/>
-                  <path d="M8.5 8L9.8 5.5h4.4L15.5 8" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round"/>
-                </svg>
-                <svg v-else-if="card.icon === 'jellyfish'" viewBox="0 0 24 24" fill="none">
-                  <path d="M6 10a6 6 0 0 1 12 0" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round"/>
-                  <path d="M8 10c0 4 1 7 1 7M12 10v7M16 10c0 4-1 7-1 7" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round"/>
-                </svg>
-                <svg v-else-if="card.icon === 'lotus'" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 20c-2-2-5-4-5-7a5 5 0 0 1 10 0c0 3-3 5-5 7z" stroke="#c79a5c" stroke-width="1.4"/>
-                  <path d="M7 13c-2-1-4-3-4-5a4 4 0 0 1 6 3M17 13c2-1 4-3 4-5a4 4 0 0 0-6 3" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round"/>
-                </svg>
-                <svg v-else-if="card.icon === 'shark'" viewBox="0 0 24 24" fill="none">
-                  <path d="M2 14c3-3 6-5 10-5 2-3 3-6 5-7-1 3-1 6 1 8 2 1 4 2 4 4H2z" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-                <svg v-else viewBox="0 0 24 24" fill="none">
-                  <path d="M9 3h6l1 6 3.5 1.5L17 14l1 7H6l1-7-2.5-3.5L8 9z" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
-
-              <div class="title-copy">
-                <h3 class="le-card-title">{{ card.title }}</h3>
-                <p class="le-card-vessel">{{ card.vessel }}</p>
-              </div>
+              <template v-if="card.hasImage">
+                <img :src="card.image" :alt="card.title" />
+              </template>
+              <NoImagePlaceholder v-else :label="card.title" />
             </div>
 
-            <p class="le-card-desc">{{ card.shortDescriptionption}} </p>
+            <div class="le-card-body">
+              <div class="title-row">
+                <div class="card-icon">
+                  <svg v-if="card.icon === 'freedive'" viewBox="0 0 24 24" fill="none">
+                    <path d="M3 16c2-3 5-5 9-5s7 2 9 5" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round"/>
+                    <circle cx="17" cy="7" r="2" stroke="#c79a5c" stroke-width="1.4"/>
+                    <path d="M15 9L7 15" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round"/>
+                  </svg>
+                  <svg v-else-if="card.icon === 'surf'" viewBox="0 0 24 24" fill="none">
+                    <path d="M2 14c2.5 1.5 5 1.5 7.5 0s5-1.5 7.5 0" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round"/>
+                    <path d="M5 14c0-5 4-9 9-9-1.5 3-2 6-1 9" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round"/>
+                  </svg>
+                  <svg v-else-if="card.icon === 'whale'" viewBox="0 0 24 24" fill="none">
+                    <path d="M2 12c2-4 6-6 10-6s8 3 10 7c-2 1-4 1-6 0-2 3-5 4-8 3" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M18 18c1-2 2-4 1-6" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round"/>
+                  </svg>
+                  <svg v-else-if="card.icon === 'camera'" viewBox="0 0 24 24" fill="none">
+                    <rect x="3" y="8" width="18" height="12" rx="2" stroke="#c79a5c" stroke-width="1.4"/>
+                    <circle cx="12" cy="14" r="3" stroke="#c79a5c" stroke-width="1.4"/>
+                    <path d="M8.5 8L9.8 5.5h4.4L15.5 8" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round"/>
+                  </svg>
+                  <svg v-else-if="card.icon === 'jellyfish'" viewBox="0 0 24 24" fill="none">
+                    <path d="M6 10a6 6 0 0 1 12 0" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round"/>
+                    <path d="M8 10c0 4 1 7 1 7M12 10v7M16 10c0 4-1 7-1 7" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round"/>
+                  </svg>
+                  <svg v-else-if="card.icon === 'lotus'" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 20c-2-2-5-4-5-7a5 5 0 0 1 10 0c0 3-3 5-5 7z" stroke="#c79a5c" stroke-width="1.4"/>
+                    <path d="M7 13c-2-1-4-3-4-5a4 4 0 0 1 6 3M17 13c2-1 4-3 4-5a4 4 0 0 0-6 3" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round"/>
+                  </svg>
+                  <svg v-else-if="card.icon === 'shark'" viewBox="0 0 24 24" fill="none">
+                    <path d="M2 14c3-3 6-5 10-5 2-3 3-6 5-7-1 3-1 6 1 8 2 1 4 2 4 4H2z" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                  <svg v-else viewBox="0 0 24 24" fill="none">
+                    <path d="M9 3h6l1 6 3.5 1.5L17 14l1 7H6l1-7-2.5-3.5L8 9z" stroke="#c79a5c" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
 
-            <p v-if="card.host" class="le-card-host">Hosted by {{ card.host }}.</p>
+                <div class="title-copy">
+                  <h3 class="le-card-title">{{ card.title }}</h3>
+                  <p class="le-card-vessel">{{ card.vessel }}</p>
+                </div>
+              </div>
 
-            <div class="divider"></div>
-            <p class="le-card-desc">{{ card.description}} </p>
+              <p class="le-card-desc">{{ card.shortDescriptionption}} </p>
+
+              <p v-if="card.host" class="le-card-host">Hosted by {{ card.host }}.</p>
+
+              <div class="divider"></div>
+              <p class="le-card-desc">{{ card.description}} </p>
 
 
-            <div class="le-card-date">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#c79a5c" stroke-width="1.8">
-                <rect x="3" y="4" width="18" height="18" rx="2"/>
-                <path d="M3 9h18M8 2v4M16 2v4"/>
-              </svg>
-              <span>{{ card.date }}</span>
+              <div class="le-card-date">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#c79a5c" stroke-width="1.8">
+                  <rect x="3" y="4" width="18" height="18" rx="2"/>
+                  <path d="M3 9h18M8 2v4M16 2v4"/>
+                </svg>
+                <span>{{ card.date }}</span>
+              </div>
+
+              <button class="le-card-btn" @click.stop="goToExpedition(card.key)">VIEW EXPEDITION</button>
             </div>
+          </article>
+        </div>
 
-            <button class="le-card-btn" @click.stop="goToExpedition(card.key)">VIEW EXPEDITION</button>
-          </div>
-        </article>
+        <button
+          v-if="isMobile"
+          class="le-arrow le-arrow--next"
+          type="button"
+          aria-label="Next expedition"
+          @click="handleNextClick"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <div class="carousel-dots" v-if="isMobile">
+        <button
+          v-for="(card, i) in cards"
+          :key="'dot-' + card.key"
+          class="dot"
+          :class="{ active: i === currentIndex }"
+          :aria-label="'Go to slide ' + (i + 1)"
+          type="button"
+          @click="handleDotClick(i)"
+        ></button>
       </div>
     </section>
   </div>
@@ -306,11 +465,23 @@ onUnmounted(() => observer?.disconnect())
   padding: 0.9rem 1.2rem 3rem;
 }
 
+.le-carousel-outer {
+  position: relative;
+}
+
 .le-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.75rem;
   align-items: stretch;
+}
+
+.le-arrow {
+  display: none;
+}
+
+.carousel-dots {
+  display: none;
 }
 
 .le-card {
@@ -489,7 +660,92 @@ onUnmounted(() => observer?.disconnect())
 
 @media (max-width: 720px) {
   .le-grid {
-    grid-template-columns: 1fr;
+    display: flex;
+    grid-template-columns: unset;
+    overflow-x: auto;
+    overflow-y: visible;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    gap: 0.75rem;
+    padding-bottom: 0.25rem;
+    margin: 0 -1.2rem;
+    padding-left: 1.2rem;
+    padding-right: 1.2rem;
+  }
+
+  .le-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .le-card {
+    flex: 0 0 86%;
+    scroll-snap-align: center;
+    min-height: 0;
+  }
+
+  /* ── Carousel arrows ── */
+  .le-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 38%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(199, 154, 92, 0.45);
+    background: rgba(4, 16, 31, 0.75);
+    color: #c79a5c;
+    cursor: pointer;
+    z-index: 5;
+    padding: 0;
+    backdrop-filter: blur(4px);
+    transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+  }
+
+  .le-arrow:active {
+    transform: translateY(-50%) scale(0.92);
+  }
+
+  .le-arrow:hover {
+    background: rgba(199, 154, 92, 0.18);
+    border-color: #c79a5c;
+  }
+
+  .le-arrow--prev {
+    left: 0.35rem;
+  }
+
+  .le-arrow--next {
+    right: 0.35rem;
+  }
+
+  /* ── Dot indicators ── */
+  .carousel-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: none;
+    padding: 0;
+    background: rgba(199, 154, 92, 0.3);
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.3s ease;
+  }
+
+  .dot.active {
+    background: #c79a5c;
+    transform: scale(1.25);
   }
 
   .le-topbar {
@@ -499,10 +755,6 @@ onUnmounted(() => observer?.disconnect())
 
   .le-hero {
     padding-top: 1.6rem;
-  }
-
-  .le-card {
-    min-height: 0;
   }
 
   .brand-name {

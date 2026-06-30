@@ -17,11 +17,11 @@ const EXPEDITION_FAMILIES = [
     days: '6 Days',
     description: 'Our signature sailing, snorkelling and wildlife expedition.',
     features: [
-      { icon: 'sail', label: 'Sailing' },
+    { icon: 'sail', label: 'Sailing' },
       { icon: 'snorkel', label: 'Snorkelling' },
       { icon: 'wildlife', label: 'Wildlife' },
       { icon: 'beach', label: 'Beaches' },
-      { icon: 'sunset', label: 'Private Chef' },
+      { icon: 'chef', label: 'Private Chef' },
     ],
     link: '/expeditions/ocean-safari',
     viewLabel: 'VIEW EXPEDITION',
@@ -46,9 +46,9 @@ const EXPEDITION_FAMILIES = [
     features: [
       { icon: 'sail', label: 'Sailing' },
       { icon: 'dive', label: 'Scuba Diving' },
-      { icon: 'whale', label: 'WhaleSharks' },
-      { icon: 'coral', label: 'Wild Life' },
-      { icon: 'camera', label: 'Private Chef' },
+      { icon: 'whale', label: 'Whale Sharks' },
+      { icon: 'wildlife', label: 'Wild Life' },
+      { icon: 'chef', label: 'Private Chef' },
     ],
     link: '/expeditions/dive-expedition',
     viewLabel: 'VIEW EXPEDITION',
@@ -99,6 +99,16 @@ function scrollToCard(index: number) {
   card?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' })
 }
 
+function nextCard() {
+  const total = expeditions.value.length
+  scrollToCard((activeIndex.value + 1) % total)
+}
+
+function prevCard() {
+  const total = expeditions.value.length
+  scrollToCard((activeIndex.value - 1 + total) % total)
+}
+
 let observer: IntersectionObserver | null = null
 
 function setupObserver() {
@@ -141,7 +151,19 @@ onUnmounted(() => {
 
 <template>
   <section class="tours-section">
-    <div class="tours-grid" ref="scrollerRef" @scroll="onCarouselScroll">
+    <div class="tours-carousel-outer">
+      <button
+        class="tours-arrow tours-arrow--prev"
+        type="button"
+        aria-label="Previous expedition"
+        @click="prevCard"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+
+      <div class="tours-grid" ref="scrollerRef" @scroll="onCarouselScroll">
       <div
         v-for="(item, index) in expeditions"
         :key="item.key"
@@ -318,6 +340,23 @@ onUnmounted(() => {
               </svg>
 
               <svg
+                v-else-if="feat.icon === 'chef'"
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+              >
+                <path
+                  d="M6 12.5A3.5 3.5 0 0 1 7.1 5.7a4 4 0 0 1 7.8 0 3.5 3.5 0 0 1 1.1 6.8V19H6v-6.5Z"
+                  stroke="#C9A84C"
+                  stroke-width="1.4"
+                  stroke-linejoin="round"
+                />
+                <path d="M6 19h12" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
+                <path d="M9 12.5v0M12 12.5v0M15 12.5v0" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
+              </svg>
+
+              <svg
                 v-else-if="feat.icon === 'camera'"
                 width="28"
                 height="28"
@@ -353,6 +392,18 @@ onUnmounted(() => {
           </button>
         </div>
       </div>
+      </div>
+
+      <button
+        class="tours-arrow tours-arrow--next"
+        type="button"
+        aria-label="Next expedition"
+        @click="nextCard"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
     </div>
 
     <div class="tours-dots" aria-hidden="true">
@@ -631,6 +682,14 @@ onUnmounted(() => {
   display: none;
 }
 
+.tours-carousel-outer {
+  position: relative;
+}
+
+.tours-arrow {
+  display: none;
+}
+
 @media (max-width: 768px) {
   .tours-dots {
     display: flex;
@@ -693,9 +752,46 @@ onUnmounted(() => {
     grid-template-columns: 1fr;
     grid-template-rows: 220px 1fr auto;
     min-height: unset;
-    flex: 0 0 88%;
+    flex: 0 0 100%;
     scroll-snap-align: center;
     scroll-snap-stop: always;
+  }
+
+  .tours-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid rgba(201, 168, 76, 0.45);
+    background: rgba(6, 22, 42, 0.8);
+    color: #c9a84c;
+    cursor: pointer;
+    z-index: 5;
+    padding: 0;
+    backdrop-filter: blur(4px);
+    transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+  }
+
+  .tours-arrow:active {
+    transform: translateY(-50%) scale(0.92);
+  }
+
+  .tours-arrow:hover {
+    background: rgba(201, 168, 76, 0.18);
+    border-color: #c9a84c;
+  }
+
+  .tours-arrow--prev {
+    left: 0.5rem;
+  }
+
+  .tours-arrow--next {
+    right: 0.5rem;
   }
 
   .card-image-panel {
