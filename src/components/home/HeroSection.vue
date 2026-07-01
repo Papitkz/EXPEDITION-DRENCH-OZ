@@ -379,64 +379,74 @@ const handleVisibilityChange = () => { if (!document.hidden && isPlaying.value &
       </Transition>
     </div>
 
-    <!-- Bottom-right floating controls bar -->
-    <div class="bottom-right-bar">
-      <!-- Hide/Show Tours button -->
-      <button 
-        @click.stop="showTours = !showTours" 
-        class="bar-btn bar-btn-text"
-        :aria-label="showTours ? 'Hide tours' : 'Show tours'"
-      >
-        <span class="bar-icon">
-          <svg v-if="showTours" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M18 15l-6-6-6 6"/>
-          </svg>
-          <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M6 9l6 6 6-6"/>
-          </svg>
-        </span>
-        <span class="bar-label">{{ showTours ? 'HIDE TOURS' : 'SHOW TOURS' }}</span>
-      </button>
-
-      <span class="bar-divider"></span>
-
-      <!-- Play/Pause -->
-      <button 
-        @click.stop="togglePlayPause" 
-        class="bar-btn"
-        :aria-label="isPlaying ? 'Pause' : 'Play'"
-      >
-        <svg v-if="!isPlaying" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-        <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-      </button>
-
-      <!-- Next (if multiple videos) -->
-      <button 
-        @click.stop="nextVideo" 
-        v-if="hasMultipleVideos"
-        class="bar-btn"
-        aria-label="Next video"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4v16l14-8z"/></svg>
-      </button>
-
-      <!-- Book a Call - ONLY shows when tours are hidden (video is visible) -->
-      <Transition name="bac-fade">
+    <!-- Bottom-right floating controls bar
+         Teleported to <body> on purpose: this section (.hero-section) lives
+         inside <main class="main-content"> in App.vue, which is
+         `position: relative; z-index: 2` — i.e. its own stacking context.
+         A z-index set from inside that context can never beat elements
+         OUTSIDE it (e.g. the "scroll to top" button, z-index: 200, which is
+         a sibling of main-content and only appears once you scroll into the
+         page). Teleporting makes this bar a direct child of <body>, so its
+         z-index is compared at the true top level and always wins. -->
+    <Teleport to="body">
+      <div class="bottom-right-bar">
+        <!-- Hide/Show Tours button -->
         <button 
-          @click.stop="openCalendly"
-          class="bar-btn bar-btn-gold"
-          :class="{ 'bac-pulse': isPulsing }"
-          aria-label="Book a call with an adventure partner"
+          @click.stop="showTours = !showTours" 
+          class="bar-btn bar-btn-text"
+          :aria-label="showTours ? 'Hide tours' : 'Show tours'"
         >
           <span class="bar-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6.29 6.29l.93-.93a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+            <svg v-if="showTours" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M18 15l-6-6-6 6"/>
+            </svg>
+            <svg v-else width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M6 9l6 6 6-6"/>
             </svg>
           </span>
-          <span class="bar-label">Book a Call</span>
+          <span class="bar-label">{{ showTours ? 'HIDE TOURS' : 'SHOW TOURS' }}</span>
         </button>
-      </Transition>
-    </div>
+
+        <span class="bar-divider"></span>
+
+        <!-- Play/Pause -->
+        <button 
+          @click.stop="togglePlayPause" 
+          class="bar-btn"
+          :aria-label="isPlaying ? 'Pause' : 'Play'"
+        >
+          <svg v-if="!isPlaying" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        </button>
+
+        <!-- Next (if multiple videos) -->
+        <button 
+          @click.stop="nextVideo" 
+          v-if="hasMultipleVideos"
+          class="bar-btn"
+          aria-label="Next video"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4v16l14-8z"/></svg>
+        </button>
+
+        <!-- Book a Call - ONLY shows when tours are hidden (video is visible) -->
+        <Transition name="bac-fade">
+          <button 
+            @click.stop="openCalendly"
+            class="bar-btn bar-btn-gold"
+            :class="{ 'bac-pulse': isPulsing }"
+            aria-label="Book a call with an adventure partner"
+          >
+            <span class="bar-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.62 3.4 2 2 0 0 1 3.6 1.22h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.77a16 16 0 0 0 6.29 6.29l.93-.93a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+              </svg>
+            </span>
+            <span class="bar-label">Book a Call</span>
+          </button>
+        </Transition>
+      </div>
+    </Teleport>
   </section>
 </template>
 
@@ -662,7 +672,11 @@ const handleVisibilityChange = () => { if (!document.hidden && isPlaying.value &
   position: fixed;
   bottom: 1.5rem;
   right: 1.5rem;
-  z-index: 9999;
+  /* Highest interactive layer on the site — deliberately above the
+     decorative gold-compass cursor trail (z-index: 10000, pointer-events:
+     none) and everything else, now that this is teleported to <body> and
+     no longer trapped in main-content's stacking context. */
+  z-index: 10500;
   display: flex;
   align-items: center;
   gap: 0.25rem;
