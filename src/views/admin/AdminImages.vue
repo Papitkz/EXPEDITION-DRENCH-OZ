@@ -154,6 +154,32 @@ const COMPONENT_REGISTRY: ComponentDef[] = [
     ],
   },
   {
+    component: 'ExperienceView',
+    label: 'The Experience Page',
+    file: 'src/views/ExperienceView.vue',
+    sections: [
+      { section: 'hero', label: 'Hero', slots: [
+        { slotIndex: 0, label: 'Hero Image', defaultMediaType: 'image' },
+      ]},
+      { section: 'rhythm', label: 'A Day Aboard — Dawn / Midday / Dusk', slots: [
+        { slotIndex: 0, label: 'Dawn', defaultMediaType: 'image' },
+        { slotIndex: 1, label: 'Midday', defaultMediaType: 'image' },
+        { slotIndex: 2, label: 'Dusk', defaultMediaType: 'image' },
+      ]},
+      { section: 'gallery', label: 'Atmosphere Gallery', slots: [
+        { slotIndex: 0, label: 'Gallery 1', defaultMediaType: 'image' },
+        { slotIndex: 1, label: 'Gallery 2', defaultMediaType: 'image' },
+        { slotIndex: 2, label: 'Gallery 3', defaultMediaType: 'image' },
+        { slotIndex: 3, label: 'Gallery 4', defaultMediaType: 'image' },
+        { slotIndex: 4, label: 'Gallery 5', defaultMediaType: 'image' },
+        { slotIndex: 5, label: 'Gallery 6', defaultMediaType: 'image' },
+      ]},
+      { section: 'pillars', label: 'Pillars Background', slots: [
+        { slotIndex: 0, label: 'Background Image', defaultMediaType: 'image' },
+      ]},
+    ],
+  },
+  {
     component: 'ExpeditionsView',
     label: 'Expeditions Page',
     file: 'src/views/ExpeditionsView.vue',

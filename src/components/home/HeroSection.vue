@@ -662,7 +662,7 @@ const handleVisibilityChange = () => { if (!document.hidden && isPlaying.value &
   position: fixed;
   bottom: 1.5rem;
   right: 1.5rem;
-  z-index: 100;
+  z-index: 9999;
   display: flex;
   align-items: center;
   gap: 0.25rem;

@@ -7,6 +7,23 @@ import NoImagePlaceholder from '@/components/NoImagePlaceholder.vue'
 const router = useRouter()
 const cms = useComponentCMS('ToursSection')
 
+// Maps feature icon keys to their custom illustrated icon images.
+// Icons without an entry here (e.g. 'coral', 'camera') keep using the inline SVG fallback.
+const FEATURE_ICON_IMAGES: Record<string, string> = {
+  sail: '/images/icons/sail.png',
+  snorkel: '/images/icons/snorkel.png',
+  wildlife: '/images/icons/wildlife.png',
+  beach: '/images/icons/beach.png',
+  sunset: '/images/icons/sunset.png',
+  dive: '/images/icons/dive.png',
+  whale: '/images/icons/whale.png',
+  manta: '/images/icons/manta.png',
+  chef: '/images/icons/chef.png',
+  oceanS: '/images/icons/turtle.png',
+  diveE: '/images/icons/manta2.png',
+
+}
+
 const EXPEDITION_FAMILIES = [
   {
     key: 'ocean-safari',
@@ -179,35 +196,23 @@ onUnmounted(() => {
         </div>
 
         <div class="card-content-panel">
-          <div class="product-icon">
-            <svg
-              v-if="item.key === 'ocean-safari'"
-              width="48"
-              height="48"
-              viewBox="0 0 100 100"
-              fill="none"
-            >
-              <ellipse cx="50" cy="52" rx="18" ry="12" stroke="#C9A84C" stroke-width="1.5" />
-              <ellipse cx="50" cy="50" rx="10" ry="8" fill="none" stroke="#C9A84C" stroke-width="1.2" />
-              <path d="M32 52 Q22 44 26 36 Q34 42 32 52Z" stroke="#C9A84C" stroke-width="1.2" fill="none" />
-              <path d="M68 52 Q78 44 74 36 Q66 42 68 52Z" stroke="#C9A84C" stroke-width="1.2" fill="none" />
-              <path d="M34 60 Q26 70 30 76 Q38 68 34 60Z" stroke="#C9A84C" stroke-width="1.2" fill="none" />
-              <path d="M66 60 Q74 70 70 76 Q62 68 66 60Z" stroke="#C9A84C" stroke-width="1.2" fill="none" />
-              <ellipse cx="50" cy="34" rx="8" ry="6" stroke="#C9A84C" stroke-width="1.5" />
-              <circle cx="47" cy="32" r="1.5" fill="#C9A84C" />
-            </svg>
+        <div class="product-icon">
+          <img
+            v-if="item.key === 'ocean-safari'"
+            src="/images/icons/turtle.png"
+            alt=""
+            width="48"
+            height="48"
+          />
 
-            <svg v-else width="48" height="48" viewBox="0 0 100 100" fill="none">
-              <path
-                d="M50 50 C30 30 10 45 15 60 C20 72 40 65 50 60 C60 65 80 72 85 60 C90 45 70 30 50 50Z"
-                stroke="#C9A84C"
-                stroke-width="1.5"
-                fill="none"
-              />
-              <path d="M50 60 L50 82 Q53 78 50 72 Q47 78 50 82" stroke="#C9A84C" stroke-width="1.2" fill="none" />
-              <circle cx="44" cy="55" r="2" fill="#C9A84C" opacity="0.7" />
-            </svg>
-          </div>
+          <img
+            v-else
+            src="/images/icons/manta2.png"
+            alt=""
+            width="48"
+            height="48"
+          />
+        </div>
 
           <h3 class="product-title">{{ item.title }}</h3>
           <p class="product-vessel">{{ item.vessel }}</p>
@@ -221,113 +226,20 @@ onUnmounted(() => {
 
           <div class="feature-icons">
             <div v-for="feat in item.features" :key="feat.label" class="feat-item">
-              <svg
-                v-if="feat.icon === 'sail'"
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <path d="M12 3v13M12 3C12 3 5 9 5 16h7" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
-                <path d="M3 19h18" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
-              </svg>
-
-              <svg
-                v-else-if="feat.icon === 'snorkel'"
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <circle cx="12" cy="9" r="4" stroke="#C9A84C" stroke-width="1.4" />
-                <path d="M8 13c0 4 8 4 8 0" stroke="#C9A84C" stroke-width="1.4" />
-                <path d="M7 7c-2-2-4 0-3 3" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
-              </svg>
-
-              <svg
-                v-else-if="feat.icon === 'wildlife'"
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <path d="M12 14c-3 0-6 2-6 4v1h12v-1c0-2-3-4-6-4z" stroke="#C9A84C" stroke-width="1.4" />
-                <circle cx="12" cy="9" r="4" stroke="#C9A84C" stroke-width="1.4" />
-                <path d="M3 8c1-3 4-3 5-1M16 7c1-2 4-2 5 1" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
-              </svg>
-
-              <svg
-                v-else-if="feat.icon === 'beach'"
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <path d="M4 20h16M12 20V8M12 8c0 0-3-5 0-7 3 2 0 7 0 7z" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
-                <path d="M12 10c0 0 5 2 7 0" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
-                <path d="M12 13c0 0-5 2-7 0" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
-              </svg>
-
-              <svg
-                v-else-if="feat.icon === 'sunset'"
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <path d="M3 17h18M8 17A4 4 0 0 1 16 17" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
-                <path d="M12 9V6M5.5 11.5L7 10M18.5 11.5L17 10" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
-              </svg>
-
-              <svg
-                v-else-if="feat.icon === 'dive'"
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <path d="M9 4h6v4H9z" stroke="#C9A84C" stroke-width="1.3" />
-                <rect x="8" y="8" width="8" height="10" rx="1" stroke="#C9A84C" stroke-width="1.4" />
-                <path
-                  d="M7 10H5a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h2M17 10h2a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-2"
-                  stroke="#C9A84C"
-                  stroke-width="1.3"
-                />
-              </svg>
-
-              <svg
-                v-else-if="feat.icon === 'whale'"
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <path d="M4 14c0-4 3-7 8-7s8 3 8 6v2c0 1-1 2-2 2H6c-1 0-2-1-2-2v-1z" stroke="#C9A84C" stroke-width="1.4" />
-                <path d="M18 15c2-1 4-1 4 1l-2 3" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
-                <circle cx="9" cy="12" r="1" fill="#C9A84C" />
-                <path d="M12 7 Q14 3 18 5" stroke="#C9A84C" stroke-width="1.2" stroke-linecap="round" fill="none" />
-              </svg>
-
-              <svg
-                v-else-if="feat.icon === 'manta'"
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <path
-                  d="M12 12 C8 8 3 10 4 14 C5 17 9 16 12 14 C15 16 19 17 20 14 C21 10 16 8 12 12Z"
-                  stroke="#C9A84C"
-                  stroke-width="1.4"
-                  fill="none"
-                />
-                <path d="M12 14 L12 19" stroke="#C9A84C" stroke-width="1.2" stroke-linecap="round" />
-              </svg>
+              <img
+                v-if="FEATURE_ICON_IMAGES[feat.icon]"
+                :src="FEATURE_ICON_IMAGES[feat.icon]"
+                :alt="feat.label"
+                class="feat-icon-img"
+                width="56"
+                height="56"
+                loading="lazy"
+              />
 
               <svg
                 v-else-if="feat.icon === 'coral'"
-                width="28"
-                height="28"
+                width="56"
+                height="56"
                 viewBox="0 0 24 24"
                 fill="none"
               >
@@ -340,26 +252,9 @@ onUnmounted(() => {
               </svg>
 
               <svg
-                v-else-if="feat.icon === 'chef'"
-                width="28"
-                height="28"
-                viewBox="0 0 24 24"
-                fill="none"
-              >
-                <path
-                  d="M6 12.5A3.5 3.5 0 0 1 7.1 5.7a4 4 0 0 1 7.8 0 3.5 3.5 0 0 1 1.1 6.8V19H6v-6.5Z"
-                  stroke="#C9A84C"
-                  stroke-width="1.4"
-                  stroke-linejoin="round"
-                />
-                <path d="M6 19h12" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
-                <path d="M9 12.5v0M12 12.5v0M15 12.5v0" stroke="#C9A84C" stroke-width="1.4" stroke-linecap="round" />
-              </svg>
-
-              <svg
                 v-else-if="feat.icon === 'camera'"
-                width="28"
-                height="28"
+                width="56"
+                height="56"
                 viewBox="0 0 24 24"
                 fill="none"
               >
@@ -549,7 +444,7 @@ onUnmounted(() => {
 .feature-icons {
   display: flex;
   justify-content: center;
-  gap: 0.6rem;
+  gap: 1rem;
   margin-bottom: 1.25rem;
   flex-wrap: wrap;
 }
@@ -559,7 +454,14 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   gap: 0.3rem;
-  min-width: 44px;
+  min-width: 68px;
+}
+
+.feat-icon-img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 1px rgba(201, 168, 76, 0.15));
 }
 
 .feat-label {
@@ -823,11 +725,16 @@ onUnmounted(() => {
   }
 
   .feature-icons {
-    gap: 0.5rem;
+    gap: 0.6rem;
   }
 
   .feat-item {
-    min-width: 38px;
+    min-width: 56px;
+  }
+
+  .feat-icon-img {
+    width: 40px;
+    height: 40px;
   }
 
   .card-actions {
@@ -849,5 +756,66 @@ onUnmounted(() => {
   .btn-escape {
     align-self: center;
   }
+}
+
+.feature-icons {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: nowrap;        /* was: wrap */
+}
+
+.feat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  flex: 1 1 0;               /* was: min-width: 68px */
+  min-width: 0;               /* allows shrinking below content size */
+}
+
+.feat-icon-img {
+  width: 100%;
+  max-width: 56px;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  filter: drop-shadow(0 0 1px rgba(201, 168, 76, 0.15));
+}
+
+.feat-label {
+  font-size: 0.56rem;         /* slightly smaller so 5 labels fit without wrapping oddly */
+  white-space: normal;        /* allow label text to wrap to 2 lines if needed */
+}
+@media (max-width: 480px) {
+  .feature-icons {
+    gap: 0.35rem;
+  }
+
+  .feat-icon-img {
+    max-width: 34px;
+  }
+
+  .feat-label {
+    font-size: 0.5rem;
+  }
+}
+.feature-icons {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  justify-content: flex-start;  /* can't center-and-scroll well */
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 0 0.25rem;
+}
+.feature-icons::-webkit-scrollbar { display: none; }
+
+.feat-item {
+  flex: 0 0 auto;
+  min-width: 56px;
 }
 </style>

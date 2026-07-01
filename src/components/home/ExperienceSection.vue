@@ -187,10 +187,9 @@ onMounted(async () => {
   z-index: 1;
 }
 
-.terrain-img-wrap {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
+.terrain-img {
+  object-fit: cover;
+  object-position: center center; /* try this instead of 40% */
 }
 
 .terrain-img {
@@ -467,6 +466,11 @@ onMounted(async () => {
 
   .waypoint-tooltip p {
     font-size: 0.66rem;
+  }
+}
+@media (max-width: 540px) {
+  .experience-section {
+    margin: 1.75rem auto 0; /* remove bottom margin */
   }
 }
 </style>
